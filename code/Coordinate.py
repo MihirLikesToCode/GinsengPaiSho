@@ -70,6 +70,36 @@ class Coordinate:
         else:
             return False
 
+    def toTuple(self) -> tuple[int, int]:
+        """Converts the coordinate to a tuple.
+
+        Returns:
+            tuple[int, int]: A tuple representation of the coordinate. Index 0 is the
+            x-coordinate. Index 1 is the y-coordinate.
+        """
+        return (self.x, self.y)
+
+    @staticmethod
+    def fromTuple(pos: tuple[int, int]) -> "Coordinate":
+        """Creates a Coordinate object from a tuple.
+
+        Args:
+            pos (tuple[int, int]): A tuple, where both numbers are within -8 and 8 inclusive.
+
+        Raises:
+            ValueError: If either of the numbers are not within the range.
+
+        Returns:
+            Coordinate: The Coordinate object.
+        """
+        x, y = pos
+        if Coordinate._checkBounds(x) and Coordinate._checkBounds(y):
+            return Coordinate(x, y)
+        raise ValueError("Coordinates must be within -8 and 8 inclusive.")
+
+    def __hash__(self) -> int:
+        return hash(self.toTuple())
+
 
 if __name__ == "__main__":
     print(
