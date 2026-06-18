@@ -1,5 +1,6 @@
 from Coordinate import Coordinate
-from Settings import PIXELS_PER_UNIT, SCREEN_SIZE
+from Settings import center, neg, pos, u
+from BasicTile import BasicTile
 
 import pygame as pg
 from pygame.surface import Surface
@@ -11,11 +12,11 @@ class Board:
     def __init__(self) -> None:
         """Initializes the board."""
         self.coordinates = Board._getAllPossibleCoordinates()
+        self.tiles: list[BasicTile] = self._initTiles()
 
     @staticmethod
     def _getAllPossibleCoordinates() -> list[Coordinate]:
-        """Generates a list of all possible coordinates on the board, and also
-            sets the instance variable self.coordinates to this list.
+        """Generates a list of all possible coordinates on the board.
 
         Returns:
             list[Coordinate]: A list of Coordinate objects representing all
@@ -41,22 +42,18 @@ class Board:
 
         # removes duplicates, and converts the tuples into Coordinate objetcs
         quarterCoords = sorted(list(set(quarterCoords)))
-        # print(quarterCoords)
 
         return [Coordinate(x, y) for x, y in quarterCoords[::-1]]
 
     def drawBoard(self, screen: Surface) -> None:
         self._drawBoardBackground(screen)
+        self._drawTiles(screen)
 
     def _drawBoardBackground(self, screen: Surface) -> None:
         """Draws the background of the game board. That is, draws the circle, colored
         regions, and lines."""
 
-        center: int = SCREEN_SIZE // 2
-        neg: int = center - 9 * PIXELS_PER_UNIT
-        pos: int = center + 9 * PIXELS_PER_UNIT
         c: int = center  # shorthand
-        u: int = PIXELS_PER_UNIT  # shorthand
 
         RED: tuple[int, int, int] = (180, 30, 30)
         TAN: tuple[int, int, int] = (210, 200, 185)
@@ -140,6 +137,16 @@ class Board:
 
         # thick dark border
         pg.draw.circle(screen, (60, 40, 40), (center, center), 8.9 * u, 8)
+
+    def _initTiles(self) -> list[BasicTile]:
+        tile1: BasicTile = BasicTile(
+            Coordinate(0, 0), "tempOwner", "assets/BlackBadgermole.png"
+        )
+        return [tile1]
+
+    def _drawTiles(self, screen: Surface) -> None:
+        for tile in self.tiles:
+            tile.drawTile(screen)
 
 
 if __name__ == "__main__":
