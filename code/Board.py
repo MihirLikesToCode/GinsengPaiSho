@@ -55,10 +55,10 @@ class Board:
 
         c: int = center  # shorthand
 
-        RED: tuple[int, int, int] = (180, 30, 30)
-        TAN: tuple[int, int, int] = (210, 200, 185)
+        RED: tuple[int, int, int] = (160, 44, 44)
+        TAN: tuple[int, int, int] = (161, 147, 138)
         BLACK: tuple[int, int, int] = (0, 0, 0)
-        WHITE: tuple[int, int, int] = (240, 240, 240)
+        WHITE: tuple[int, int, int] = (218, 210, 210)
 
         grid_surface = pg.Surface(screen.get_size())
         grid_surface.fill(TAN)  # base board color
@@ -139,10 +139,70 @@ class Board:
         pg.draw.circle(screen, (60, 40, 40), (center, center), 8.9 * u, 8)
 
     def _initTiles(self) -> list[BasicTile]:
-        tile1: BasicTile = BasicTile(
-            Coordinate(0, 0), "tempOwner", "assets/BlackBadgermole.png"
+        blackBadgermole: BasicTile = BasicTile(Coordinate(1, 7), "Badgermole", "black")
+        blackDragon: BasicTile = BasicTile(Coordinate(-1, 7), "Dragon", "black")
+        blackFlyingBison: BasicTile = BasicTile(
+            Coordinate(-2, 6), "FlyingBison", "black"
         )
-        return [tile1]
+        blackGinseng1: BasicTile = BasicTile(Coordinate(-4, 4), "Ginseng", "black")
+        blackGinseng2: BasicTile = BasicTile(Coordinate(4, 4), "Ginseng", "black")
+        blackKoi: BasicTile = BasicTile(Coordinate(2, 6), "Koi", "black")
+        blackLionTurtle: BasicTile = BasicTile(Coordinate(0, 4), "LionTurtle", "black")
+        blackLotusFlower: BasicTile = BasicTile(
+            Coordinate(0, 8), "LotusFlower", "black"
+        )
+        blackOrchid1: BasicTile = BasicTile(Coordinate(-5, 4), "Orchid", "black")
+        blackOrchid2: BasicTile = BasicTile(Coordinate(5, 4), "Orchid", "black")
+        blackWheel1: BasicTile = BasicTile(Coordinate(-3, 5), "Wheel", "black")
+        blackWheel2: BasicTile = BasicTile(Coordinate(3, 5), "Wheel", "black")
+
+        whiteBadgermole: BasicTile = BasicTile(
+            Coordinate(-1, -7), "Badgermole", "white"
+        )
+        whiteDragon: BasicTile = BasicTile(Coordinate(1, -7), "Dragon", "white")
+        whiteFlyingBison: BasicTile = BasicTile(
+            Coordinate(2, -6), "FlyingBison", "white"
+        )
+        whiteGinseng1: BasicTile = BasicTile(Coordinate(4, -4), "Ginseng", "white")
+        whiteGinseng2: BasicTile = BasicTile(Coordinate(-4, -4), "Ginseng", "white")
+        whiteKoi: BasicTile = BasicTile(Coordinate(-2, -6), "Koi", "white")
+        whiteLionTurtle: BasicTile = BasicTile(Coordinate(0, -4), "LionTurtle", "white")
+        whiteLotusFlower: BasicTile = BasicTile(
+            Coordinate(0, -8), "LotusFlower", "white"
+        )
+        whiteOrchid1: BasicTile = BasicTile(Coordinate(5, -4), "Orchid", "white")
+        whiteOrchid2: BasicTile = BasicTile(Coordinate(-5, -4), "Orchid", "white")
+        whiteWheel1: BasicTile = BasicTile(Coordinate(3, -5), "Wheel", "white")
+        whiteWheel2: BasicTile = BasicTile(Coordinate(-3, -5), "Wheel", "white")
+
+        ret: list[BasicTile] = [
+            blackBadgermole,
+            blackDragon,
+            blackFlyingBison,
+            blackGinseng1,
+            blackGinseng2,
+            blackKoi,
+            blackLionTurtle,
+            blackLotusFlower,
+            blackOrchid1,
+            blackOrchid2,
+            blackWheel1,
+            blackWheel2,
+            whiteBadgermole,
+            whiteDragon,
+            whiteFlyingBison,
+            whiteGinseng1,
+            whiteGinseng2,
+            whiteKoi,
+            whiteLionTurtle,
+            whiteLotusFlower,
+            whiteOrchid1,
+            whiteOrchid2,
+            whiteWheel1,
+            whiteWheel2,
+        ]
+
+        return ret
 
     def _drawTiles(self, screen: Surface) -> None:
         for tile in self.tiles:

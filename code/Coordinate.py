@@ -84,7 +84,8 @@ class Coordinate:
         """Creates a Coordinate object from a tuple.
 
         Args:
-            pos (tuple[int, int]): A tuple, where both numbers are within -8 and 8 inclusive.
+            pos (tuple[int, int]): A tuple, where both numbers are within -8 and 8
+            inclusive.
 
         Raises:
             ValueError: If either of the numbers are not within the range.
