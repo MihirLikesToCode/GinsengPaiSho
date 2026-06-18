@@ -45,9 +45,10 @@ class Board:
 
         return [Coordinate(x, y) for x, y in quarterCoords[::-1]]
 
-    def drawBoard(self, screen: Surface) -> None:
+    def drawBoard(self, screen: Surface, coordsToHighlight: list[Coordinate]) -> None:
         self._drawBoardBackground(screen)
         self._drawTiles(screen)
+        self._highlightCoords(screen, coordsToHighlight)
 
     def _drawBoardBackground(self, screen: Surface) -> None:
         """Draws the background of the game board. That is, draws the circle, colored
@@ -200,6 +201,31 @@ class Board:
     def _drawTiles(self, screen: Surface) -> None:
         for tile in self.tiles:
             tile.drawTile(screen)
+
+    def getTileAtCoord(self, pos: Coordinate) -> BasicTile | None:
+        """Gets the tile at a specific coordinate.
+
+        Args:
+            pos (Coordinate): The coordinate to check.
+
+        Returns:
+            BasicTile | None: The tile if there is one. None otherwise.
+        """
+        for tile in self.tiles:
+            if tile.pos == pos:
+                return tile
+        return None
+
+    def _highlightCoords(
+        self, screen: Surface, coordsToHighlight: list[Coordinate]
+    ) -> None:
+        for coord in coordsToHighlight:
+            pg.draw.circle(
+                screen, (255, 255, 0), (c + coord.x * u, c - coord.y * u), 20, 3
+            )
+
+    def getValidMovesForTile(self, tile: BasicTile) -> list[Coordinate]:
+        return tile.getValidMoves(self.tiles, self.coordinates)
 
 
 if __name__ == "__main__":

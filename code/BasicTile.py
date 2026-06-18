@@ -66,6 +66,59 @@ class BasicTile:
     def __repr__(self) -> str:
         return self.__str__()
 
+    def getValidMoves(
+        self, allTiles: list["BasicTile"], validCoordinates: list[Coordinate]
+    ) -> list[Coordinate]:
+        occupiedPositions: dict[tuple[int, int], "BasicTile"] = {
+            tile.pos.toTuple(): tile for tile in allTiles
+        }
+
+        validPositions: list[tuple[int, int]] = [
+            coord.toTuple() for coord in validCoordinates
+        ]
+
+        start: tuple[int, int] = self.pos.toTuple()
+        directions: list[tuple[int, int]] = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+
+        # coordinate: distance from start
+        visited: dict[tuple[int, int], int] = {start: 0}
+        queue: deque[tuple[int, int]] = deque([start])
+        validMoves: list[Coordinate] = []
+
+        while queue:
+            current: tuple[int, int] = queue.popleft()
+            currentDist: int = visited[current]
+
+            if currentDist == self.maxMovement:
+                continue
+
+            for dx, dy in directions:
+                neighbor: tuple[int, int] = (current[0] + dx, current[1] + dy)
+
+                if neighbor not in validPositions:
+                    continue
+
+                if neighbor in visited:
+                    continue
+
+                newDist: int = currentDist + 1
+
+                if neighbor in occupiedPositions:
+                    occupyingTile: "BasicTile" = occupiedPositions[neighbor]
+
+                    # if is an enemy tile
+                    if occupyingTile.color != self.color:
+                        validMoves.append(Coordinate.fromTuple(neighbor))
+                    visited[neighbor] = newDist
+                    continue
+
+                # empty coord case
+                visited[neighbor] = newDist
+                validMoves.append(Coordinate.fromTuple(neighbor))
+                queue.append(neighbor)
+
+        return validMoves
+
 
 if __name__ == "__main__":
     print(
