@@ -32,9 +32,20 @@ class MouseEventHandler:
         return None
 
     def getMousePos(self) -> tuple[int, int]:
+        """Gets the mouse position in terms of pixels.
+
+        Returns:
+            tuple[int, int]: The mouse pos.
+        """
         return pg.mouse.get_pos()
 
     def getMouseCoords(self) -> Coordinate | None:
+        """Gets the mouse positions in terms of board coordinates.
+
+        Returns:
+            Coordinate | None: The board coordinate the mouse is closest to. None if it is
+              not near a valid coordinate.
+        """
         mousePos: tuple[int, int] = self.getMousePos()
         mouseX, mouseY = mousePos
 
@@ -51,6 +62,26 @@ class MouseEventHandler:
         except ValueError:
             return None
 
+    def handleLeftClick(self) -> list[Coordinate]:
+        """Handles the left click for the game loop
+
+        Returns:
+            list[Coordinate]: The list of coordinates to highlight.
+        """
+        coordsToHighlight: list[Coordinate] = []
+
+        mouseCoords: Coordinate | None = MEH.getMouseCoords()
+        if mouseCoords != None:
+            coordsToHighlight.append(mouseCoords)
+
+            tileAtCoord: BasicTile | None = g.board.getTileAtCoord(mouseCoords)
+
+            if tileAtCoord != None:
+
+                coordsToHighlight += g.board.getValidMovesForTile(tileAtCoord)
+
+        return coordsToHighlight
+
 
 if __name__ == "__main__":
     MEH: MouseEventHandler = MouseEventHandler()
@@ -65,15 +96,7 @@ if __name__ == "__main__":
                 running = False
                 pg.quit()
             elif event.type == pg.MOUSEBUTTONDOWN:
-                coordsToHighlight = []
-
-                mouseCoords: Coordinate | None = MEH.getMouseCoords()
-                if mouseCoords == None:
-                    continue
-                else:
-                    coordsToHighlight.append(mouseCoords)
-                    tileAtCoords: BasicTile | None = g.board.getTileAtCoord(mouseCoords)
-                    if tileAtCoords != None:
-                        coordsToHighlight += g.board.getValidMovesForTile(tileAtCoords)
+                if event.button == 1:
+                    coordsToHighlight = MEH.handleLeftClick()
 
         g.drawScreen(coordsToHighlight)

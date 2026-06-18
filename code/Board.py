@@ -118,7 +118,7 @@ class Board:
         # Circular mask
         mask_surface = pg.Surface(screen.get_size(), pg.SRCALPHA)
         mask_surface.fill((0, 0, 0, 0))
-        pg.draw.circle(mask_surface, (255, 255, 255, 255), (c, c), 8.9 * u)
+        pg.draw.circle(mask_surface, (255, 255, 255, 255), (c, c), 9.2 * u)
 
         grid_surface.set_colorkey(None)
         final_surface = pg.Surface(screen.get_size(), pg.SRCALPHA)
@@ -130,7 +130,7 @@ class Board:
         screen.blit(final_surface, (0, 0))
 
         # thick dark border
-        pg.draw.circle(screen, (60, 40, 40), (c, c), 8.9 * u, 8)
+        pg.draw.circle(screen, (60, 40, 40), (c, c), 9.2 * u, 8)
 
     def _initTiles(self) -> list[BasicTile]:
         blackBadgermole: BasicTile = BasicTile(Coordinate(1, 7), "Badgermole", "black")
@@ -221,11 +221,30 @@ class Board:
     ) -> None:
         for coord in coordsToHighlight:
             pg.draw.circle(
-                screen, (255, 255, 0), (c + coord.x * u, c - coord.y * u), 20, 3
+                screen, (20, 200, 200), (c + coord.x * u, c - coord.y * u), 19, 3
             )
 
     def getValidMovesForTile(self, tile: BasicTile) -> list[Coordinate]:
+        """Gets all the valid moves for this tile.
+
+        Args:
+            tile (BasicTile): The tile you want to check.
+
+        Returns:
+            list[Coordinate]: All the possible moves for this tile.
+        """
         return tile.getValidMoves(self.tiles, self.coordinates)
+
+    def getSurroundingTilesForTile(self, tile: BasicTile) -> list[BasicTile]:
+        """Gets the surrounding tiles for this tile.
+
+        Args:
+            tile (BasicTile): The tile you want to check.
+
+        Returns:
+            list[BasicTile]: All surrounding tiles in the 8 spots closest to it.
+        """
+        return tile.getSurroundingTiles(self.tiles, self.coordinates)
 
 
 if __name__ == "__main__":
