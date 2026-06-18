@@ -1,5 +1,5 @@
 from Coordinate import Coordinate
-from Settings import center, neg, pos, u
+from Settings import neg, pos, u, c
 from BasicTile import BasicTile
 
 import pygame as pg
@@ -52,9 +52,6 @@ class Board:
     def _drawBoardBackground(self, screen: Surface) -> None:
         """Draws the background of the game board. That is, draws the circle, colored
         regions, and lines."""
-
-        c: int = center  # shorthand
-
         RED: tuple[int, int, int] = (160, 44, 44)
         TAN: tuple[int, int, int] = (161, 147, 138)
         BLACK: tuple[int, int, int] = (0, 0, 0)
@@ -97,12 +94,8 @@ class Board:
 
         # Draw grid lines
         for i in range(-9, 10):
-            pg.draw.line(
-                grid_surface, BLACK, (center + i * u, neg), (center + i * u, pos), 2
-            )
-            pg.draw.line(
-                grid_surface, BLACK, (neg, center + i * u), (pos, center + i * u), 2
-            )
+            pg.draw.line(grid_surface, BLACK, (c + i * u, neg), (c + i * u, pos), 2)
+            pg.draw.line(grid_surface, BLACK, (neg, c + i * u), (pos, c + i * u), 2)
 
         # Draw diagonal lines
         pg.draw.line(
@@ -124,7 +117,7 @@ class Board:
         # Circular mask
         mask_surface = pg.Surface(screen.get_size(), pg.SRCALPHA)
         mask_surface.fill((0, 0, 0, 0))
-        pg.draw.circle(mask_surface, (255, 255, 255, 255), (center, center), 8.9 * u)
+        pg.draw.circle(mask_surface, (255, 255, 255, 255), (c, c), 8.9 * u)
 
         grid_surface.set_colorkey(None)
         final_surface = pg.Surface(screen.get_size(), pg.SRCALPHA)
@@ -136,7 +129,7 @@ class Board:
         screen.blit(final_surface, (0, 0))
 
         # thick dark border
-        pg.draw.circle(screen, (60, 40, 40), (center, center), 8.9 * u, 8)
+        pg.draw.circle(screen, (60, 40, 40), (c, c), 8.9 * u, 8)
 
     def _initTiles(self) -> list[BasicTile]:
         blackBadgermole: BasicTile = BasicTile(Coordinate(1, 7), "Badgermole", "black")

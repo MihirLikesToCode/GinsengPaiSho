@@ -1,5 +1,5 @@
 from Coordinate import Coordinate
-from Settings import center, neg, pos, u
+from Settings import u, c
 
 from collections import deque
 from typing import Literal
@@ -52,8 +52,6 @@ class BasicTile:
         Args:
             screen (Surface): The screen to draw the tile to.
         """
-        c: int = center  # shorthand
-
         imgSurface: Surface = load(self._getSpritePath())
         imgSurface: Surface = smoothscale(imgSurface, (40, 40))
 

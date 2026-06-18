@@ -5,6 +5,7 @@ center: int = SCREEN_SIZE // 2
 neg: int = center - 9 * PIXELS_PER_UNIT
 pos: int = center + 9 * PIXELS_PER_UNIT
 u = PIXELS_PER_UNIT  # shorthand
+c = center  # shorthand
 
 print(
     "You are running Settings.py directly. This file is meant to be"
