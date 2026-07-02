@@ -1,5 +1,5 @@
 from Coordinate import Coordinate
-from Settings import neg, pos, u, c
+from Settings import neg, pos, u, c, SCREEN_SIZE
 from BasicTile import BasicTile
 
 import pygame as pg
@@ -18,6 +18,9 @@ class Board:
         """Initializes the board."""
         self.coordinates = Board._getAllPossibleCoordinates()
         self.tiles: list[BasicTile] = self._initTiles()
+        self.whiteCapturedTiles: list[BasicTile] = []
+        self.blackCapturedTiles: list[BasicTile] = []
+        self._initCapturedSpots()
 
     @staticmethod
     def _getAllPossibleCoordinates() -> list[Coordinate]:
@@ -56,6 +59,18 @@ class Board:
         coordsToHighlight: list[Coordinate],
         turn: Literal["White", "Black"],
     ) -> None:
+        """Draws the following components of the board:
+        - The background
+        - The tiles
+        - The highlighted coordinates (if applicable)
+        - The text
+
+        Args:
+            screen (Surface): The screen
+            coordsToHighlight (list[Coordinate]): The coords to highlight. If none, pass in
+              an empty list.
+            turn (Literal[&quot;White&quot;, &quot;Black&quot;]): The current player's turn.
+        """
         self._drawBoardBackground(screen)
         self._drawTiles(screen)
         self._highlightCoords(screen, coordsToHighlight)
@@ -212,6 +227,36 @@ class Board:
     def _drawTiles(self, screen: Surface) -> None:
         for tile in self.tiles:
             tile.drawTile(screen)
+        self._drawCapturedTiles(screen)
+
+    def _drawCapturedTiles(self, screen: Surface) -> None:
+        for i, tile in enumerate(self.whiteCapturedTiles):
+            tile.drawTileAt(screen, self.whiteCapturedSpots[i])
+        for i, tile in enumerate(self.blackCapturedTiles):
+            tile.drawTileAt(screen, self.blackCapturedSpots[i])
+
+    def _initCapturedSpots(self) -> None:
+        self.whiteCapturedSpots: list[tuple[int, int]] = []
+
+        for i in range(1, 6):
+            for j in range(i):
+                x: int = i - 1 - j
+                y: int = j
+                if x + y == 4 and x != 1 and x != 3:
+                    continue
+                self.whiteCapturedSpots.append((20 + 40 * x, SCREEN_SIZE - 20 - 40 * y))
+
+        self.blackCapturedSpots: list[tuple[int, int]] = []
+
+        for i in range(1, 6):
+            for j in range(i):
+                x: int = i - 1 - j
+                y: int = j
+                if x + y == 4 and x != 1 and x != 3:
+                    continue
+                self.blackCapturedSpots.append(
+                    (SCREEN_SIZE - 20 - 40 * x, SCREEN_SIZE - 20 - 40 * y)
+                )
 
     def getTileAtCoord(self, pos: Coordinate) -> BasicTile | None:
         """Gets the tile at a specific coordinate.
@@ -262,13 +307,17 @@ class Board:
         return tile.getSurroundingTiles(self.tiles, self.coordinates)
 
     def removeTile(self, tile: BasicTile) -> None:
-        """Removes a tile from the board.
+        """Removes a tile from the board, and adds it to the captured tiles list.
 
         Args:
             tile (BasicTile): The tile to remove.
         """
         if tile in self.tiles:
             self.tiles.remove(tile)
+        if (tile.color == "white") and (tile not in self.whiteCapturedTiles):
+            self.whiteCapturedTiles.append(tile)
+        elif (tile.color == "black") and (tile not in self.blackCapturedTiles):
+            self.blackCapturedTiles.append(tile)
 
     def _drawText(self, screen: Surface, turn: Literal["White", "Black"]) -> None:
         """Draws the text on the screen."""
@@ -279,8 +328,12 @@ class Board:
         titleText: Surface = font.render("Ginseng Pai Sho", True, (0, 0, 0))
         screen.blit(titleText, (0, 0))
 
+        # turn text
         turnText: Surface = font.render(f"Turn: {turn}", True, (0, 0, 0))
         screen.blit(turnText, (screen.get_width() - turnText.get_width() - padding, 0))
+
+        # captured pieces
+        capturedText: Surface = font.render("Captured:", True, (0, 0, 0))
 
 
 if __name__ == "__main__":
@@ -288,5 +341,3 @@ if __name__ == "__main__":
         "You are running Board.py directly. This file is meant to be"
         " imported as a module, so there is no code to run here."
     )
-
-    print(pg.font.get_fonts())

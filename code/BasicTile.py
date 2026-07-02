@@ -53,10 +53,26 @@ class BasicTile:
             screen (Surface): The screen to draw the tile to.
         """
         imgSurface: Surface = load(self._getSpritePath())
-        imgSurface: Surface = smoothscale(imgSurface, (40, 40))
+        imgSurface = smoothscale(imgSurface, (40, 40))
 
         imgRect: Rect = imgSurface.get_rect()
         imgRect.center = (c + self.pos.x * u, c - self.pos.y * u)
+
+        screen.blit(imgSurface, imgRect)
+
+    def drawTileAt(self, screen: Surface, pos: tuple[int, int]) -> None:
+        """Draws the tile at specific SCREEN COORDINATES (in pixels)
+
+        Args:
+            screen (Surface): The screen.
+            pos (tuple[int, int]): The center postion of where you want to draw
+              the tile, in pixels.
+        """
+        imgSurface: Surface = load(self._getSpritePath())
+        imgSurface = smoothscale(imgSurface, (30, 30))
+
+        imgRect: Rect = imgSurface.get_rect()
+        imgRect.center = pos
 
         screen.blit(imgSurface, imgRect)
 
