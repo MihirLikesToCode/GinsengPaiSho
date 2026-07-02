@@ -97,6 +97,14 @@ class MouseEventHandler:
             ):
                 g.board.removeTile(capturedTile)
 
+                if self.selectedTile.pieceType == "Orchid":
+                    g.board.removeTile(self.selectedTile)
+                    self.selectedTile = None
+                    self.validMoves = []
+                    g.switchTurn()
+
+                    return []
+
             # move AFTER you remove the captured tile
             self.selectedTile.moveTo(clickedCoords)
             g.switchTurn()

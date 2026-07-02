@@ -111,6 +111,8 @@ class BasicTile:
         queue: deque[tuple[int, int]] = deque([start])
         validMoves: list[Coordinate] = []
 
+        canCapture: bool = self.pieceType != "Ginseng"
+
         if self.pieceType == "Wheel":
             for dx, dy in directions:
                 current = start
@@ -133,7 +135,7 @@ class BasicTile:
 
             return validMoves
 
-        if self.pieceType == "LotusFlower":
+        elif self.pieceType == "LotusFlower":
             diagonals: list[tuple[int, int]] = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
             visitedJumps: set[tuple[int, int]] = set()
             queue: deque[tuple[int, int]] = deque([start])
@@ -161,7 +163,7 @@ class BasicTile:
 
             return validMoves
 
-        # for most pieces
+        # for all other pieces
         while queue:
             current: tuple[int, int] = queue.popleft()
             currentDist: int = visited[current]
@@ -172,10 +174,7 @@ class BasicTile:
             for dx, dy in directions:
                 neighbor: tuple[int, int] = (current[0] + dx, current[1] + dy)
 
-                if neighbor not in validPositions:
-                    continue
-
-                if neighbor in visited:
+                if neighbor not in validPositions or neighbor in visited:
                     continue
 
                 newDist: int = currentDist + 1
@@ -184,7 +183,7 @@ class BasicTile:
                     occupyingTile: "BasicTile" = occupiedPositions[neighbor]
 
                     # if is an enemy tile
-                    if occupyingTile.color != self.color:
+                    if occupyingTile.color != self.color and canCapture:
                         validMoves.append(Coordinate.fromTuple(neighbor))
                     visited[neighbor] = newDist
                     continue
