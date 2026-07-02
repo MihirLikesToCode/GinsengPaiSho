@@ -113,14 +113,13 @@ class BasicTile:
 
         if self.pieceType == "Wheel":
             for dx, dy in directions:
-                queue = deque([start])
+                current = start
 
-                while queue:
-                    current = queue.popleft()
+                while True:
                     neighbor: tuple[int, int] = (current[0] + dx, current[1] + dy)
 
                     if neighbor not in validPositions:
-                        continue
+                        break
 
                     if neighbor in occupiedPositions:
                         occupyingTile: "BasicTile" = occupiedPositions[neighbor]
@@ -129,11 +128,40 @@ class BasicTile:
                             validMoves.append(Coordinate.fromTuple(neighbor))
                         break
 
-                    queue.append(neighbor)
                     validMoves.append(Coordinate.fromTuple(neighbor))
+                    current = neighbor
 
             return validMoves
 
+        if self.pieceType == "LotusFlower":
+            diagonals: list[tuple[int, int]] = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+            visitedJumps: set[tuple[int, int]] = set()
+            queue: deque[tuple[int, int]] = deque([start])
+
+            while queue:
+                current = queue.popleft()
+
+                for dx, dy in diagonals:
+                    over: tuple[int, int] = (current[0] + dx, current[1] + dy)
+                    landing: tuple[int, int] = (
+                        current[0] + 2 * dx,
+                        current[1] + 2 * dy,
+                    )
+
+                    if over not in occupiedPositions:
+                        continue
+
+                    if landing not in validPositions or landing in occupiedPositions:
+                        continue
+
+                    if landing not in visitedJumps:
+                        validMoves.append(Coordinate.fromTuple(landing))
+                        visitedJumps.add(landing)
+                        queue.append(landing)
+
+            return validMoves
+
+        # for most pieces
         while queue:
             current: tuple[int, int] = queue.popleft()
             currentDist: int = visited[current]
