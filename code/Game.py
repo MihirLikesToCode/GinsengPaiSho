@@ -5,7 +5,6 @@ from BasicTile import BasicTile
 
 import pygame as pg
 from pygame.surface import Surface
-from pygame.event import Event
 
 
 class Game:
@@ -29,7 +28,8 @@ class Game:
 
 class MouseEventHandler:
     def __init__(self) -> None:
-        return None
+        self.selectedTile: BasicTile | None = None
+        self.validMoves: list[Coordinate] = []
 
     def getMousePos(self) -> tuple[int, int]:
         """Gets the mouse position in terms of pixels.
@@ -68,19 +68,45 @@ class MouseEventHandler:
         Returns:
             list[Coordinate]: The list of coordinates to highlight.
         """
-        coordsToHighlight: list[Coordinate] = []
 
-        mouseCoords: Coordinate | None = MEH.getMouseCoords()
-        if mouseCoords != None:
-            coordsToHighlight.append(mouseCoords)
+        clickedCoords: Coordinate | None = self.getMouseCoords()
 
-            tileAtCoord: BasicTile | None = g.board.getTileAtCoord(mouseCoords)
+        if clickedCoords == None:
+            self.selectedTile = None
+            self.validMoves = []
+            return []
 
-            if tileAtCoord != None:
+        # Case 1: A tile is alr selected, and we have clicked a valid move.
+        if (self.selectedTile is not None) and (clickedCoords in self.validMoves):
 
-                coordsToHighlight += g.board.getValidMovesForTile(tileAtCoord)
+            # If we have captured a tile, remove it.
+            capturedTile: BasicTile | None = g.board.getTileAtCoord(clickedCoords)
+            if (
+                (capturedTile is not None)
+                and (capturedTile is not self.selectedTile)
+                and (capturedTile.color != self.selectedTile.color)
+            ):
+                g.board.removeTile(capturedTile)
 
-        return coordsToHighlight
+            # move AFTER you remove the captured tile
+            self.selectedTile.moveTo(clickedCoords)
+
+            self.selectedTile = None
+            self.validMoves = []
+            return []
+
+        # Case 2: Clicked on a tile
+        tileAtCoord: BasicTile | None = g.board.getTileAtCoord(clickedCoords)
+
+        if tileAtCoord is not None:
+            self.selectedTile = tileAtCoord
+            self.validMoves = g.board.getValidMovesForTile(tileAtCoord)
+            return self.validMoves
+
+        # Case 3: Clicked on an empty space
+        self.selectedTile = None
+        self.validMoves = []
+        return []
 
 
 if __name__ == "__main__":

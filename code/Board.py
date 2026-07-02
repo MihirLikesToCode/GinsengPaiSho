@@ -49,6 +49,7 @@ class Board:
         self._drawBoardBackground(screen)
         self._drawTiles(screen)
         self._highlightCoords(screen, coordsToHighlight)
+        # self._drawText(screen)
 
     def _drawBoardBackground(self, screen: Surface) -> None:
         """Draws the background of the game board. That is, draws the circle, colored
@@ -221,7 +222,11 @@ class Board:
     ) -> None:
         for coord in coordsToHighlight:
             pg.draw.circle(
-                screen, (20, 200, 200), (c + coord.x * u, c - coord.y * u), 19, 3
+                screen,
+                (20, 200, 200),
+                (c + coord.x * u, c - coord.y * u),
+                5,
+                3,
             )
 
     def getValidMovesForTile(self, tile: BasicTile) -> list[Coordinate]:
@@ -246,9 +251,20 @@ class Board:
         """
         return tile.getSurroundingTiles(self.tiles, self.coordinates)
 
+    def removeTile(self, tile: BasicTile) -> None:
+        """Removes a tile from the board.
+
+        Args:
+            tile (BasicTile): The tile to remove.
+        """
+        if tile in self.tiles:
+            self.tiles.remove(tile)
+
 
 if __name__ == "__main__":
     print(
         "You are running Board.py directly. This file is meant to be"
         " imported as a module, so there is no code to run here."
     )
+
+    print()

@@ -243,6 +243,16 @@ class BasicTile:
 
         return surroundingTiles
 
+    def moveTo(self, coord: Coordinate) -> None:
+        """Moves the tile to the given coordinate.
+
+        Args:
+            coord (Coordinate): The coordinate you want to move the tile to.
+        """
+        # todo: add validation for if the move is valid
+        # todo: add animation for the movement?
+        self.pos = coord
+
 
 if __name__ == "__main__":
     print(
