@@ -4,6 +4,11 @@ from BasicTile import BasicTile
 
 import pygame as pg
 from pygame.surface import Surface
+from pygame.font import Font
+
+from typing import Literal
+
+pg.init()
 
 
 class Board:
@@ -45,11 +50,16 @@ class Board:
 
         return [Coordinate(x, y) for x, y in quarterCoords[::-1]]
 
-    def drawBoard(self, screen: Surface, coordsToHighlight: list[Coordinate]) -> None:
+    def drawBoard(
+        self,
+        screen: Surface,
+        coordsToHighlight: list[Coordinate],
+        turn: Literal["White", "Black"],
+    ) -> None:
         self._drawBoardBackground(screen)
         self._drawTiles(screen)
         self._highlightCoords(screen, coordsToHighlight)
-        # self._drawText(screen)
+        self._drawText(screen, turn)
 
     def _drawBoardBackground(self, screen: Surface) -> None:
         """Draws the background of the game board. That is, draws the circle, colored
@@ -260,6 +270,18 @@ class Board:
         if tile in self.tiles:
             self.tiles.remove(tile)
 
+    def _drawText(self, screen: Surface, turn: Literal["White", "Black"]) -> None:
+        """Draws the text on the screen."""
+        padding: int = 10
+
+        # title card?
+        font: Font = pg.font.SysFont("mvboli", 30)
+        titleText: Surface = font.render("Ginseng Pai Sho", True, (0, 0, 0))
+        screen.blit(titleText, (0, 0))
+
+        turnText: Surface = font.render(f"Turn: {turn}", True, (0, 0, 0))
+        screen.blit(turnText, (screen.get_width() - turnText.get_width() - padding, 0))
+
 
 if __name__ == "__main__":
     print(
@@ -267,4 +289,4 @@ if __name__ == "__main__":
         " imported as a module, so there is no code to run here."
     )
 
-    print()
+    print(pg.font.get_fonts())

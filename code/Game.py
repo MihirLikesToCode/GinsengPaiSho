@@ -6,12 +6,15 @@ from BasicTile import BasicTile
 import pygame as pg
 from pygame.surface import Surface
 
+from typing import Literal
+
 
 class Game:
     def __init__(self) -> None:
         """Initializes the game."""
         self.board: Board = Board()
         self.initScreen()
+        self.turn: Literal["White", "Black"] = "White"
 
     def initScreen(self) -> None:
         """Initializes the screen."""
@@ -21,9 +24,15 @@ class Game:
     def drawScreen(self, coordsToHighlight: list[Coordinate]) -> None:
         """Draws the entirety of the screen."""
         self.screen.fill((255, 255, 255))
-        self.board.drawBoard(self.screen, coordsToHighlight)
+        self.board.drawBoard(self.screen, coordsToHighlight, self.turn)
 
         pg.display.flip()
+
+    def switchTurn(self) -> None:
+        if self.turn == "White":
+            self.turn = "Black"
+        else:
+            self.turn = "White"
 
 
 class MouseEventHandler:
@@ -90,6 +99,7 @@ class MouseEventHandler:
 
             # move AFTER you remove the captured tile
             self.selectedTile.moveTo(clickedCoords)
+            g.switchTurn()
 
             self.selectedTile = None
             self.validMoves = []
@@ -100,7 +110,10 @@ class MouseEventHandler:
 
         if tileAtCoord is not None:
             self.selectedTile = tileAtCoord
-            self.validMoves = g.board.getValidMovesForTile(tileAtCoord)
+            if tileAtCoord.color == g.turn.lower():
+                self.validMoves = g.board.getValidMovesForTile(tileAtCoord)
+            else:
+                self.validMoves = []
             return self.validMoves
 
         # Case 3: Clicked on an empty space
