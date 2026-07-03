@@ -122,6 +122,17 @@ class MouseEventHandler:
                 self.validMoves = g.board.getValidMovesForTile(tileAtCoord)
             else:
                 self.validMoves = []
+
+            # test here
+            print(
+                "protected by ginseng: "
+                + str(
+                    self.selectedTile.isProtectedByFriendlyGinseng(
+                        g.board.tiles, g.board.coordinates
+                    )
+                )
+            )
+
             return self.validMoves
 
         # Case 3: Clicked on an empty space
