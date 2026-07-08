@@ -47,7 +47,7 @@ class BasicTile:
         return f"assets/{self.color.capitalize()}{self.pieceType}.png"
 
     def drawTile(self, screen: Surface) -> None:
-        """Draws the tile to the screen, at its current position, given its sprite.
+        """Draws the tile to the screen, at its current board coordinates, given its sprite.
 
         Args:
             screen (Surface): The screen to draw the tile to.
@@ -95,6 +95,9 @@ class BasicTile:
         Returns:
             list[Coordinate]: A list of all possible movement options for this tile.
         """
+        if self.isTrappedByEnemyKoi(allTiles, validCoordinates) == True:
+            return []
+
         occupiedPositions: dict[tuple[int, int], "BasicTile"] = {
             tile.pos.toTuple(): tile for tile in allTiles
         }
@@ -113,6 +116,10 @@ class BasicTile:
 
         canCapture: bool = self.pieceType != "Ginseng"
 
+        self.maxMovement = 5 + self.getFlyingBisonMovementBonus(
+            allTiles, validCoordinates
+        )
+
         if self.pieceType == "Wheel":
             for dx, dy in directions:
                 current = start
@@ -126,7 +133,13 @@ class BasicTile:
                     if neighbor in occupiedPositions:
                         occupyingTile: "BasicTile" = occupiedPositions[neighbor]
 
-                        if occupyingTile.color != self.color:
+                        if (
+                            occupyingTile.color != self.color
+                            and occupyingTile.isProtectedByFriendlyGinseng(
+                                allTiles, validCoordinates
+                            )
+                            == False
+                        ):
                             validMoves.append(Coordinate.fromTuple(neighbor))
                         break
 
@@ -183,7 +196,14 @@ class BasicTile:
                     occupyingTile: "BasicTile" = occupiedPositions[neighbor]
 
                     # if is an enemy tile
-                    if occupyingTile.color != self.color and canCapture:
+                    if (
+                        occupyingTile.color != self.color
+                        and canCapture
+                        and occupyingTile.isProtectedByFriendlyGinseng(
+                            allTiles, validCoordinates
+                        )
+                        == False
+                    ):
                         validMoves.append(Coordinate.fromTuple(neighbor))
                     visited[neighbor] = newDist
                     continue
@@ -197,6 +217,8 @@ class BasicTile:
 
     def isOnColoredRegion(self, color: Literal["white", "red"]) -> bool:
         """Determines if this tile is on a colored region (for abilities purposes).
+        If a piece is on a line that boarders a colored region, it is considered to be
+          on that region.
 
         Args:
             color (Literal[&quot;white&quot;, &quot;red&quot;]): The color you are trying to
@@ -258,7 +280,7 @@ class BasicTile:
     def getSurroundingTiles(
         self, allTiles: list["BasicTile"], validCoordinates: list[Coordinate]
     ) -> list["BasicTile"]:
-        """Gets the tiles directly surrounding this one.
+        """Gets the tiles directly surrounding this one (in the 8 spaces around it).
 
         Returns:
             (list[BasicTile]): A list of all the surrounding tiles.
@@ -300,6 +322,7 @@ class BasicTile:
         self, allTiles: list["BasicTile"], validCoordinates: list[Coordinate]
     ) -> bool:
         """Determines if this tile is currently trapped by an enemy koi.
+        A trapped tile cannot move.
 
         Args:
             allTiles (list[&quot;BasicTile&quot;]): All tiles on the board.
@@ -321,7 +344,8 @@ class BasicTile:
     def isNullifiedByEnemyLionTurtle(
         self, allTiles: list["BasicTile"], validCoordinates: list[Coordinate]
     ) -> bool:
-        """Determines if this tile is nullified by an enemy lion turtle.
+        """Determines if this tile is nullified by an enemy Lion Turtle.
+        A nullified tile cannot use any abilties (passive or otherwise).
 
         Args:
             allTiles (list[&quot;BasicTile&quot;]): All tiles
@@ -334,7 +358,7 @@ class BasicTile:
             return False
 
         for tile in self.getSurroundingTiles(allTiles, validCoordinates):
-            if tile.color != self.color:
+            if tile.pieceType == "LionTurtle" and tile.color != self.color:
                 return True
 
         return False
@@ -342,7 +366,9 @@ class BasicTile:
     def isProtectedByFriendlyGinseng(
         self, allTiles: list["BasicTile"], validCoordinates: list[Coordinate]
     ) -> bool:
-        """Determines if the tile is protected by a ginseng (un able to be captured)
+        """Determines if the tile is protected by a Ginseng (un able to be captured).
+        The Ginseng must have LOS, either vertically or horizontally. This can be nullified
+        by a Lion Turtle.
 
         Args:
             allTiles (list[&quot;BasicTile&quot;]): All tiles
@@ -394,7 +420,8 @@ class BasicTile:
     def getFlyingBisonMovementBonus(
         self, allTiles: list["BasicTile"], validCoordinates: list[Coordinate]
     ) -> int:
-        """Determines if the tile gets a movement bonus
+        """Determines if the tile gets a movement bonus from a flying bison on a red garden.
+        White Lotus and Wheel are excluded. This ability can be nullified by a Lion Turtle.
 
         Args:
             allTiles (list[&quot;BasicTile&quot;]): All tiles
@@ -408,36 +435,162 @@ class BasicTile:
 
         for tile in self.getSurroundingTiles(allTiles, validCoordinates):
             if (
-                tile.pieceType == "Badgermole"
+                tile.pieceType == "FlyingBison"
                 and tile.color == self.color
                 and tile.isOnColoredRegion("red") is True
-                and tile.isNullifiedByEnemyLionTurtle is False
+                and tile.isNullifiedByEnemyLionTurtle(allTiles, validCoordinates)
+                is False
             ):
                 return 1
         return 0
 
     def getBadgermoleTargets(
         self, allTiles: list["BasicTile"], validCoordinates: list[Coordinate]
-    ) -> list["BasicTile"]: ...
+    ) -> list["BasicTile"]:
+        """Gets all the tiles that the Badgermole can flip over itself. Returns an empty
+        list if this tile isn't a Badgermole, there are no pieces to flip, if it is not on
+        a white region, or it is nullified.
+
+        Args:
+            allTiles (list[&quot;BasicTile&quot;]): All tiles
+            validCoordinates (list[Coordinate]): A list of all valid coordinates
+
+        Returns:
+            list[&quot;BasicTile&quot;]: All the tiles that can be flipped.
+        """
+        if (
+            (self.pieceType != "Badgermole")
+            or (self.isOnColoredRegion("white") == False)
+            or (self.isNullifiedByEnemyLionTurtle(allTiles, validCoordinates) == True)
+        ):
+            return []
+
+        occupiedPositions: dict[tuple[int, int], "BasicTile"] = {
+            tile.pos.toTuple(): tile for tile in allTiles
+        }
+
+        validPositions: set[tuple[int, int]] = {
+            coord.toTuple() for coord in validCoordinates
+        }
+
+        surroundingTiles: list["BasicTile"] = self.getSurroundingTiles(
+            allTiles, validCoordinates
+        )
+
+        targets: list["BasicTile"] = []
+
+        for tile in surroundingTiles:
+            dx: int = self.pos.x - tile.pos.x
+            dy: int = self.pos.y - tile.pos.y
+            landingPos: tuple[int, int] = (self.pos.x + dx, self.pos.y + dy)
+
+            if landingPos not in validPositions or landingPos in occupiedPositions:
+                continue
+
+            targets.append(tile)
+
+        return targets
 
     def applyBadgermoleFlip(
         self,
         target: "BasicTile",
         allTiles: list["BasicTile"],
         validCoordinates: list[Coordinate],
-    ) -> bool: ...
+    ) -> bool:
+        """Moves the target tile over this Badgermole.
+
+        Args:
+            target (BasicTile): The tile you want to flip
+            allTiles (list[&quot;BasicTile&quot;]): All tiles
+            validCoordinates (list[Coordinate]): A list of all valid coordinates.
+
+        Returns:
+            bool: True if the operation worked. False otherwise.
+        """
+        possibleTargets: list["BasicTile"] = self.getBadgermoleTargets(
+            allTiles, validCoordinates
+        )
+
+        if target not in possibleTargets:
+            return False
+
+        dx: int = self.pos.x - target.pos.x
+        dy: int = self.pos.y - target.pos.y
+
+        target.moveTo(Coordinate(self.pos.x + dx, self.pos.y + dy))
+        return True
 
     def getDragonPushTargets(
         self, allTiles: list["BasicTile"], validCoordinates: list[Coordinate]
-    ) -> list["BasicTile"]: ...
+    ) -> list["BasicTile"]:
+        """Gets all the tiles that this Dragon can push. Returns an empty list if this tile
+        isn't a Dragon, there are no pieces to push, if it is not on a red region, or it is
+        nullified.
 
+        Returns:
+            _type_: _description_
+        """
+        if (
+            (self.pieceType != "Dragon")
+            or (self.isOnColoredRegion("red") == False)
+            or (self.isNullifiedByEnemyLionTurtle(allTiles, validCoordinates))
+        ):
+            return []
 
-def applyDragonPush(
-    self,
-    target: "BasicTile",
-    allTiles: list["BasicTile"],
-    validCoordinates: list[Coordinate],
-) -> bool: ...
+        occupiedPositions: dict[tuple[int, int], "BasicTile"] = {
+            tile.pos.toTuple(): tile for tile in allTiles
+        }
+
+        validPositions: set[tuple[int, int]] = {
+            coord.toTuple() for coord in validCoordinates
+        }
+
+        surroundingTiles: list["BasicTile"] = self.getSurroundingTiles(
+            allTiles, validCoordinates
+        )
+
+        targets: list["BasicTile"] = []
+
+        for tile in surroundingTiles:
+            dx: int = tile.pos.x - self.pos.x
+            dy: int = tile.pos.y - self.pos.y
+            landingPos: tuple[int, int] = (tile.pos.x + dx, tile.pos.y + dy)
+
+            if landingPos not in validPositions or landingPos in occupiedPositions:
+                continue
+
+            targets.append(tile)
+
+        return targets
+
+    def applyDragonPush(
+        self,
+        target: "BasicTile",
+        allTiles: list["BasicTile"],
+        validCoordinates: list[Coordinate],
+    ) -> bool:
+        """Pushes the target tile away from this Dragon.
+
+        Args:
+            target (BasicTile): The tile you want to move.
+            allTiles (list[&quot;BasicTile&quot;]): A list of all tiles.
+            validCoordinates (list[Coordinate]): A list of all valid coordinates.
+
+        Returns:
+            bool: True if the push worked. False otherwise.
+        """
+        possibleTargets: list["BasicTile"] = self.getBadgermoleTargets(
+            allTiles, validCoordinates
+        )
+
+        if target not in possibleTargets:
+            return False
+
+        dx: int = target.pos.x - self.pos.x
+        dy: int = target.pos.y - self.pos.y
+
+        target.moveTo(Coordinate(self.pos.x + dx, self.pos.y + dy))
+        return True
 
 
 if __name__ == "__main__":

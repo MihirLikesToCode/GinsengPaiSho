@@ -15,6 +15,7 @@ class Game:
         self.board: Board = Board()
         self.initScreen()
         self.turn: Literal["White", "Black"] = "White"
+        self.pendingAbilityTile: BasicTile | None = None
 
     def initScreen(self) -> None:
         """Initializes the screen."""
@@ -109,6 +110,9 @@ class MouseEventHandler:
             self.selectedTile.moveTo(clickedCoords)
             g.switchTurn()
 
+            # the tile which has an ability pending (the Badgermole or Dragon)
+            g.pendingAbilityTile = self.selectedTile
+
             self.selectedTile = None
             self.validMoves = []
             return []
@@ -122,16 +126,6 @@ class MouseEventHandler:
                 self.validMoves = g.board.getValidMovesForTile(tileAtCoord)
             else:
                 self.validMoves = []
-
-            # test here
-            print(
-                "protected by ginseng: "
-                + str(
-                    self.selectedTile.isProtectedByFriendlyGinseng(
-                        g.board.tiles, g.board.coordinates
-                    )
-                )
-            )
 
             return self.validMoves
 
@@ -157,4 +151,23 @@ if __name__ == "__main__":
                 if event.button == 1:
                     coordsToHighlight = MEH.handleLeftClick()
 
+                    if g.pendingAbilityTile is not None:
+                        tile: BasicTile = g.pendingAbilityTile
+
+                        if tile.pieceType == "Badgermole":
+                            targets: list[BasicTile] = tile.getBadgermoleTargets(
+                                g.board.tiles, g.board.coordinates
+                            )
+                            if targets:
+                                ...
+                                # show gui asking to pick a target
+                                # after picking a target
+                                # if yes: tile.apply()
+                                # if no: g.pendingAbilityTile = None
+                        elif tile.pieceType == "Dragon":
+                            targets: list[BasicTile] = tile.getDragonPushTargets(
+                                g.board.tiles, g.board.coordinates
+                            )
+                        else:
+                            g.pendingAbilityTile = None
         g.drawScreen(coordsToHighlight)

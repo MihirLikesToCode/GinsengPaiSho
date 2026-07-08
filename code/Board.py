@@ -280,9 +280,11 @@ class Board:
                 screen,
                 (20, 200, 200),
                 (c + coord.x * u, c - coord.y * u),
-                5,
-                3,
+                19,
+                2,
             )
+
+            # todo: second circle with opacity for cool effect
 
     def getValidMovesForTile(self, tile: BasicTile) -> list[Coordinate]:
         """Gets all the valid moves for this tile.
