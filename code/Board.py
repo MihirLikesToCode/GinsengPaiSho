@@ -21,6 +21,12 @@ class Board:
         self.whiteCapturedTiles: list[BasicTile] = []
         self.blackCapturedTiles: list[BasicTile] = []
         self._initCapturedSpots()
+        self.temples: list[Coordinate] = [
+            Coordinate(8, 0),
+            Coordinate(0, 8),
+            Coordinate(-8, 0),
+            Coordinate(0, -8),
+        ]
 
     @staticmethod
     def _getAllPossibleCoordinates() -> list[Coordinate]:

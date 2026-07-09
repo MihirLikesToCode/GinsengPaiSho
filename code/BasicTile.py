@@ -114,7 +114,22 @@ class BasicTile:
         queue: deque[tuple[int, int]] = deque([start])
         validMoves: list[Coordinate] = []
 
-        canCapture: bool = self.pieceType != "Ginseng"
+        canCapture: bool = True
+        if self.pieceType == "Ginseng":
+            canCapture = False
+        else:
+            temples: list[Coordinate] = [
+                Coordinate(8, 0),
+                Coordinate(0, 8),
+                Coordinate(-8, 0),
+                Coordinate(0, -8),
+            ]
+
+            for tile in allTiles:
+                if tile.pieceType == "LotusFlower":
+                    if tile.pos in temples:
+                        canCapture = False
+                        break
 
         self.maxMovement = 5 + self.getFlyingBisonMovementBonus(
             allTiles, validCoordinates
@@ -139,6 +154,7 @@ class BasicTile:
                                 allTiles, validCoordinates
                             )
                             == False
+                            and canCapture == True
                         ):
                             validMoves.append(Coordinate.fromTuple(neighbor))
                         break
