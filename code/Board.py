@@ -349,6 +349,61 @@ class Board:
         # captured pieces
         capturedText: Surface = font.render("Captured:", True, (0, 0, 0))
 
+    def _getAllMovesForAColor(
+        self, color: Literal["white", "black"]
+    ) -> list[Coordinate]:
+        """Gets all possible moves for a given color. Only used to check if a player has no
+        moves. If a player has no moves, it is a draw.
+
+        Args:
+            color (Literal[&quot;white&quot;, &quot;black&quot;]): The team you want to
+            check.
+
+        Returns:
+            list[Coordinate]: All the moves they can make. Without specifing the piece.
+        """
+
+        moves: list[Coordinate] = []
+        for tile in self.tiles:
+            if tile.color == color:
+                moves += tile.getValidMoves(self.tiles, self.coordinates)
+
+        return moves
+
+    def checkForDraw(self) -> bool:
+        """Checks for a draw.
+
+        Returns:
+            bool: True if there is a draw. False otherwise.
+        """
+        whiteMoves: list[Coordinate] = self._getAllMovesForAColor("white")
+        blackMoves: list[Coordinate] = self._getAllMovesForAColor("black")
+
+        if len(whiteMoves) == 0 or len(blackMoves) == 0:
+            return True
+        return False
+
+    def checkIfAColorHasWon(self) -> Literal["white", "black"] | None:
+        """Checks if a color has won.
+
+        Returns:
+            _type_: The string of the color of the team that won, or None
+        """
+        for tile in self.tiles:
+            if (
+                tile.color == "white"
+                and tile.pieceType == "LotusFlower"
+                and tile.pos.y > 0
+            ):
+                return "white"
+            elif (
+                tile.color == "black"
+                and tile.pieceType == "LotusFlower"
+                and tile.pos.y < 0
+            ):
+                return "black"
+        return None
+
 
 if __name__ == "__main__":
     print(

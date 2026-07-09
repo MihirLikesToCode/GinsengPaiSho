@@ -3,6 +3,7 @@ from Settings import SCREEN_SIZE, c, u
 from Coordinate import Coordinate
 from BasicTile import BasicTile
 from AbilityPopUpGui import AbilityPopUpGui
+from GameOverPopUpGui import GameOverPopUpGui
 
 import pygame as pg
 from pygame.surface import Surface
@@ -22,6 +23,7 @@ class Game:
         self.pendingAbilityTile: BasicTile | None = None
         self.uiManager: UIManager = UIManager((SCREEN_SIZE, SCREEN_SIZE))
         self.abilityPopUp: AbilityPopUpGui | None = None
+        self.gameOverPopUp: GameOverPopUpGui | None = None
 
     def initScreen(self) -> None:
         """Initializes the screen."""
@@ -165,13 +167,15 @@ if __name__ == "__main__":
             if g.abilityPopUp is not None and g.abilityPopUp.isActive == True:
                 g.abilityPopUp.processEvent(event)
 
+            elif g.gameOverPopUp is not None and g.gameOverPopUp.isActive == True:
+                g.gameOverPopUp.processEvent(event)
+
             elif event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     coordsToHighlight = MEH.handleLeftClick()
 
         # check for a pop up result
         if g.abilityPopUp is not None and g.abilityPopUp.resultBool is not None:
-            x = 5
 
             if (
                 g.abilityPopUp.resultTile is not None
@@ -192,6 +196,26 @@ if __name__ == "__main__":
             g.abilityPopUp.kill()
             g.abilityPopUp = None
             g.pendingAbilityTile = None
+
+        # check for a new game request
+        if g.gameOverPopUp is not None and g.gameOverPopUp.newGameRequested == True:
+            g.gameOverPopUp.kill()
+            g.gameOverPopUp = None
+            g.board = Board()
+            g.turn = "White"
+            g.pendingAbilityTile = None
+            g.abilityPopUp = None
+            coordsToHighlight = []
+
+        # check for a game end (win/loss/draw)
+        if g.gameOverPopUp is None and g.abilityPopUp is None:
+            winner: Literal["white", "black"] | None = g.board.checkIfAColorHasWon()
+            isDraw: bool = g.board.checkForDraw()
+
+            if winner is not None:
+                g.gameOverPopUp = GameOverPopUpGui(g.uiManager, winner)
+            elif isDraw:
+                g.gameOverPopUp = GameOverPopUpGui(g.uiManager, "draw")
 
         # spawn a pop up if a pending ability tile was just set
         if g.pendingAbilityTile is not None and g.abilityPopUp is None:
