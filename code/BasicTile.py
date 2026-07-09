@@ -352,6 +352,8 @@ class BasicTile:
                 tile.pieceType == "Koi"
                 and tile.color != self.color
                 and tile.isOnColoredRegion("white")
+                and tile.isNullifiedByEnemyLionTurtle(allTiles, validCoordinates)
+                == False
             ):
                 return True
 

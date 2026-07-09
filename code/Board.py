@@ -320,6 +320,12 @@ class Board:
         Args:
             tile (BasicTile): The tile to remove.
         """
+        if tile.pieceType == "LotusFlower":
+            if tile.color == "white":
+                tile.moveTo(Coordinate(0, -8))
+            else:
+                tile.moveTo(Coordinate(0, 8))
+            return
         if tile in self.tiles:
             self.tiles.remove(tile)
         if (tile.color == "white") and (tile not in self.whiteCapturedTiles):
