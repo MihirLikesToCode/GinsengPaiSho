@@ -610,6 +610,9 @@ class BasicTile:
         target.moveTo(Coordinate(target.pos.x + dx, target.pos.y + dy))
         return True
 
+    def _tradeInStr(self) -> str:
+        return f"{self.color.capitalize()} {self.pieceType}"
+
 
 if __name__ == "__main__":
     print(
