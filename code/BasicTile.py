@@ -579,7 +579,7 @@ class BasicTile:
         Returns:
             bool: True if the push worked. False otherwise.
         """
-        possibleTargets: list["BasicTile"] = self.getBadgermoleTargets(
+        possibleTargets: list["BasicTile"] = self.getDragonPushTargets(
             allTiles, validCoordinates
         )
 
@@ -589,7 +589,7 @@ class BasicTile:
         dx: int = target.pos.x - self.pos.x
         dy: int = target.pos.y - self.pos.y
 
-        target.moveTo(Coordinate(self.pos.x + dx, self.pos.y + dy))
+        target.moveTo(Coordinate(target.pos.x + dx, target.pos.y + dy))
         return True
 
 

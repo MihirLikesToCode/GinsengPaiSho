@@ -2,9 +2,13 @@ from Board import Board
 from Settings import SCREEN_SIZE, c, u
 from Coordinate import Coordinate
 from BasicTile import BasicTile
+from AbilityPopUpGui import AbilityPopUpGui
 
 import pygame as pg
 from pygame.surface import Surface
+from pygame.time import Clock
+
+from pygame_gui.ui_manager import UIManager
 
 from typing import Literal
 
@@ -16,6 +20,8 @@ class Game:
         self.initScreen()
         self.turn: Literal["White", "Black"] = "White"
         self.pendingAbilityTile: BasicTile | None = None
+        self.uiManager: UIManager = UIManager((SCREEN_SIZE, SCREEN_SIZE))
+        self.abilityPopUp: AbilityPopUpGui | None = None
 
     def initScreen(self) -> None:
         """Initializes the screen."""
@@ -26,6 +32,7 @@ class Game:
         """Draws the entirety of the screen."""
         self.screen.fill((255, 255, 255))
         self.board.drawBoard(self.screen, coordsToHighlight, self.turn)
+        self.uiManager.draw_ui(self.screen)
 
         pg.display.flip()
 
@@ -138,36 +145,74 @@ class MouseEventHandler:
 if __name__ == "__main__":
     MEH: MouseEventHandler = MouseEventHandler()
     g: Game = Game()
+    clock: Clock = Clock()
 
     coordsToHighlight: list[Coordinate] = []
     running: bool = True
+
     while running:
+        timeDelta: float = clock.tick(60) / 1000
+        g.uiManager.update(timeDelta)
 
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
                 pg.quit()
+
+            g.uiManager.process_events(event)
+
+            # check if there is an active popup
+            if g.abilityPopUp is not None and g.abilityPopUp.isActive == True:
+                g.abilityPopUp.processEvent(event)
+
             elif event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     coordsToHighlight = MEH.handleLeftClick()
 
-                    if g.pendingAbilityTile is not None:
-                        tile: BasicTile = g.pendingAbilityTile
+        # check for a pop up result
+        if g.abilityPopUp is not None and g.abilityPopUp.resultBool is not None:
+            x = 5
 
-                        if tile.pieceType == "Badgermole":
-                            targets: list[BasicTile] = tile.getBadgermoleTargets(
-                                g.board.tiles, g.board.coordinates
-                            )
-                            if targets:
-                                ...
-                                # show gui asking to pick a target
-                                # after picking a target
-                                # if yes: tile.apply()
-                                # if no: g.pendingAbilityTile = None
-                        elif tile.pieceType == "Dragon":
-                            targets: list[BasicTile] = tile.getDragonPushTargets(
-                                g.board.tiles, g.board.coordinates
-                            )
-                        else:
-                            g.pendingAbilityTile = None
+            if (
+                g.abilityPopUp.resultTile is not None
+                and g.pendingAbilityTile is not None
+            ):
+                abilityTile = g.pendingAbilityTile
+                targetTile = g.abilityPopUp.resultTile
+
+                if abilityTile.pieceType == "Dragon":
+                    abilityTile.applyDragonPush(
+                        targetTile, g.board.tiles, g.board.coordinates
+                    )
+                elif abilityTile.pieceType == "Badgermole":
+                    abilityTile.applyBadgermoleFlip(
+                        targetTile, g.board.tiles, g.board.coordinates
+                    )
+
+            g.abilityPopUp.kill()
+            g.abilityPopUp = None
+            g.pendingAbilityTile = None
+
+        # spawn a pop up if a pending ability tile was just set
+        if g.pendingAbilityTile is not None and g.abilityPopUp is None:
+            tile = g.pendingAbilityTile
+            targets: list[BasicTile] = []
+            title: str = ""
+
+            if tile.pieceType == "Dragon":
+                targets: list[BasicTile] = tile.getDragonPushTargets(
+                    g.board.tiles, g.board.coordinates
+                )
+                title: str = "Dragon Push Ability"
+            elif tile.pieceType == "Badgermole":
+                targets: list[BasicTile] = tile.getBadgermoleTargets(
+                    g.board.tiles, g.board.coordinates
+                )
+                title: str = "Badgermole Flip Ability"
+
+            if len(targets) > 0:
+                g.abilityPopUp = AbilityPopUpGui(g.uiManager, targets, title)
+            else:
+                g.pendingAbilityTile = None
+
         g.drawScreen(coordsToHighlight)
