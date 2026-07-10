@@ -617,5 +617,5 @@ class BasicTile:
 if __name__ == "__main__":
     print(
         "You are running BasicTile.py directly. This file is meant to be"
-        " imported as a module, so there is no code to run here. "
+        " imported as a module, so there is no code to run here."
     )
