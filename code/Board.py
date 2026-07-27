@@ -28,6 +28,11 @@ class Board:
             Coordinate(0, -8),
         ]
 
+        self.sideTemples: list[Coordinate] = [
+            Coordinate(8, 0),
+            Coordinate(-8, 0),
+        ]
+
     @staticmethod
     def _getAllPossibleCoordinates() -> list[Coordinate]:
         """Generates a list of all possible coordinates on the board.
@@ -332,6 +337,67 @@ class Board:
             self.whiteCapturedTiles.append(tile)
         elif (tile.color == "black") and (tile not in self.blackCapturedTiles):
             self.blackCapturedTiles.append(tile)
+
+    def getCapturedTiles(self, color: Literal["white", "black"]) -> list[BasicTile]:
+        """Gets the list of captured tiles belonging to a color.
+
+        Args:
+            color (Literal["white", "black"]): The color you want to check.
+
+        Returns:
+            list[BasicTile]: That color's captured tiles.
+        """
+        return self.whiteCapturedTiles if color == "white" else self.blackCapturedTiles
+
+    def isEligibleForTempleTrade(self, tile: BasicTile) -> bool:
+        """Determines whether a tile can currently be traded for one of its owner's
+        captured tiles.
+
+        Args:
+            tile (BasicTile): The tile to check.
+
+        Returns:
+            bool: True if this tile is eligible to be traded right now.
+        """
+        if tile not in self.tiles:
+            return False
+        if tile.pos not in self.sideTemples:
+            return False
+        if tile.pieceType == "LotusFlower":
+            return False
+        return len(self.getCapturedTiles(tile.color)) > 0
+
+    def exchangeAtSideTemple(
+        self, tileOnBoard: BasicTile, capturedTile: BasicTile
+    ) -> bool:
+        """Exchanges a tile currently sitting on a side (Eastern/Western) Temple for
+        one of that player's captured tiles.
+
+        Args:
+            tileOnBoard (BasicTile): The tile on the board, currently on a side
+              Temple.
+            capturedTile (BasicTile): One of tileOnBoard's owner's captured tiles,
+              to bring onto the board in its place.
+
+        Returns:
+            bool: True if the exchange succeeded, False otherwise.
+        """
+        if not self.isEligibleForTempleTrade(tileOnBoard):
+            return False
+        if capturedTile.color != tileOnBoard.color:
+            return False
+
+        capturedList: list[BasicTile] = self.getCapturedTiles(tileOnBoard.color)
+        if capturedTile not in capturedList:
+            return False
+
+        destination: Coordinate = tileOnBoard.pos
+
+        self.removeTile(tileOnBoard)
+        capturedList.remove(capturedTile)
+        capturedTile.moveTo(destination)
+        self.tiles.append(capturedTile)
+        return True
 
     def _drawText(self, screen: Surface, turn: Literal["White", "Black"]) -> None:
         """Draws the text on the screen."""

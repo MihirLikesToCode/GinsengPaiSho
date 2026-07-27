@@ -5,15 +5,21 @@ import pygame_gui as pgg
 from pygame_gui.ui_manager import UIManager
 from pygame_gui.elements import UIWindow, UILabel, UIButton
 
+from PopUpGui import PopUpGui
+
 from typing import Literal
 
 
-class GameOverPopUpGui:
+class GameOverPopUpGui(PopUpGui):
     def __init__(
         self, uiManager: UIManager, result: Literal["white", "black", "draw"]
     ) -> None:
-        self.manager = uiManager
+        """Creates a Game Over PopUp
 
+        Args:
+            uiManager (UIManager): The UIManager
+            result (Literal["white", "black", "draw"]): The result of the game.
+        """
         if result == "draw":
             title: str = "Draw!"
             message: str = "A player can't make any moves. Draw!"
@@ -21,12 +27,15 @@ class GameOverPopUpGui:
             title: str = f"{result.capitalize()} wins!"
             message: str = f"{result.capitalize()}'s Lotus Flower has crossed!"
 
-        self.window = UIWindow(
+        window = UIWindow(
             Rect((250, 175), (320, 180)),
-            self.manager,
+            uiManager,
             title,
             object_id="#game_over_popup",
+            draggable=True,
         )
+
+        super().__init__(uiManager, window)
 
         UILabel(
             Rect((10, 10), (280, 50)),
@@ -39,7 +48,6 @@ class GameOverPopUpGui:
             Rect((85, 80), (130, 40)), "New Game", self.manager, self.window
         )
 
-        self.isActive: bool = True
         self.newGameRequested: bool = False
 
     def processEvent(self, event: Event) -> None:
@@ -49,7 +57,3 @@ class GameOverPopUpGui:
         if event.type == pgg.UI_BUTTON_PRESSED:
             if event.ui_element == self.btnNewGame:
                 self.newGameRequested = True
-
-    def kill(self) -> None:
-        self.isActive = False
-        self.window.kill()

@@ -1,7 +1,7 @@
-import pygame as pg
 import pygame_gui as pgg
 
 from BasicTile import BasicTile
+from PopUpGui import PopUpGui
 
 from pygame import Rect
 from pygame.event import Event
@@ -10,26 +10,41 @@ from pygame_gui.ui_manager import UIManager
 from pygame_gui.elements import UIWindow, UILabel, UIDropDownMenu, UIButton
 
 
-class AbilityPopUpGui:
+class AbilityPopUpGui(PopUpGui):
     def __init__(
-        self, uiManager: UIManager, targetTiles: list[BasicTile], titleCard: str
+        self,
+        uiManager: UIManager,
+        targetTiles: list[BasicTile],
+        titleCard: str,
+        promptText: str = "Choose a game piece",
+        yesLabel: str = "Use Ability",
+        noLabel: str = "Skip Ability",
     ) -> None:
-        self.manager = uiManager
+        """Creates an Ability Pop up
+
+        Args:
+            uiManager (UIManager): The UIManager
+            targetTiles (list[BasicTile]): The target tiles to apply the ability to.
+            titleCard (str): The title of the pop up.
+            promptText (str, optional): Prompt text. Defaults to "Choose a game piece".
+            yesLabel (str, optional): Text on the `yes` button. Defaults to "Use Ability".
+            noLabel (str, optional): Text on the `no` button. Defaults to "Skip Ability".
+        """
         self.targetTiles = targetTiles
         self.tileStrMap: dict[str, BasicTile] = {
             tile.__str__(): tile for tile in self.targetTiles
         }
 
-        self.window = UIWindow(
+        window = UIWindow(
             Rect((250, 175), (320, 220)),
-            self.manager,
+            uiManager,
             titleCard,
             object_id="#ability_popup",
+            draggable=True,
         )
+        super().__init__(uiManager, window)
 
-        UILabel(
-            Rect((10, 10), (280, 30)), "Choose a game piece", self.manager, self.window
-        )
+        UILabel(Rect((10, 10), (280, 30)), promptText, self.manager, self.window)
 
         self.dropdown = UIDropDownMenu(
             [tile.__str__() for tile in self.targetTiles],
@@ -40,19 +55,18 @@ class AbilityPopUpGui:
         )
 
         self.btnYes = UIButton(
-            Rect((30, 110), (100, 40)), "Use Ability", self.manager, self.window
+            Rect((30, 110), (100, 40)), yesLabel, self.manager, self.window
         )
 
         self.btnNo = UIButton(
-            Rect((160, 110), (100, 40)), "Skip Ability", self.manager, self.window
+            Rect((160, 110), (100, 40)), noLabel, self.manager, self.window
         )
 
-        self.isActive: bool = True
         self.resultBool: bool | None = None
         self.resultTile: BasicTile | None = None
 
     def processEvent(self, event: Event) -> None:
-        """Processes a clicking event on the popup/
+        """Processes a clicking event on the popup.
 
         Args:
             event (Event): Pygame Event
@@ -70,7 +84,3 @@ class AbilityPopUpGui:
             elif event.ui_element == self.btnNo:
                 self.resultBool = False
                 self.resultTile = None
-
-    def kill(self) -> None:
-        self.isActive = False
-        self.window.kill()
