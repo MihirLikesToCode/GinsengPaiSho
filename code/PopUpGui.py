@@ -7,10 +7,15 @@ from pygame.rect import Rect
 from pygame.event import Event
 
 
+class NonClosableUIWindow(UIWindow):
+    def on_close_window_button_pressed(self) -> None:
+        return
+
+
 class PopUpGui:
     """Shared behavior for the game's modal popups."""
 
-    def __init__(self, manager: UIManager, window: UIWindow) -> None:
+    def __init__(self, manager: UIManager, window: NonClosableUIWindow) -> None:
         """Creates a pop up.
 
         Args:

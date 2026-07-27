@@ -5,7 +5,7 @@ The goal of this personal project was to create Giseng Pai Sho, a game from [thi
 ## Prerequisites
 
 This project requires **Python 3.12.10**. 
-Please ensure you have this specific version installed before proceeding. You can check your version by running `python --version` or `python3 --version` in your terminal.
+Please ensure you have this specific version installed before proceeding. You can check your version by running `python --version` in your terminal.
 
 ## Setup and Installation
 

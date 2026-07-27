@@ -3,9 +3,9 @@ from pygame.event import Event
 
 import pygame_gui as pgg
 from pygame_gui.ui_manager import UIManager
-from pygame_gui.elements import UIWindow, UILabel, UIButton
+from pygame_gui.elements import UILabel, UIButton
 
-from PopUpGui import PopUpGui
+from PopUpGui import PopUpGui, NonClosableUIWindow
 
 from typing import Literal
 
@@ -27,7 +27,7 @@ class GameOverPopUpGui(PopUpGui):
             title: str = f"{result.capitalize()} wins!"
             message: str = f"{result.capitalize()}'s Lotus Flower has crossed!"
 
-        window = UIWindow(
+        window: NonClosableUIWindow = NonClosableUIWindow(
             Rect((250, 175), (320, 180)),
             uiManager,
             title,
@@ -44,7 +44,7 @@ class GameOverPopUpGui(PopUpGui):
             self.window,
         )
 
-        self.btnNewGame = UIButton(
+        self.btnNewGame: UIButton = UIButton(
             Rect((85, 80), (130, 40)), "New Game", self.manager, self.window
         )
 

@@ -1,13 +1,13 @@
 import pygame_gui as pgg
 
 from BasicTile import BasicTile
-from PopUpGui import PopUpGui
+from PopUpGui import PopUpGui, NonClosableUIWindow
 
 from pygame import Rect
 from pygame.event import Event
 
 from pygame_gui.ui_manager import UIManager
-from pygame_gui.elements import UIWindow, UILabel, UIDropDownMenu, UIButton
+from pygame_gui.elements import UILabel, UIDropDownMenu, UIButton
 
 
 class AbilityPopUpGui(PopUpGui):
@@ -35,7 +35,7 @@ class AbilityPopUpGui(PopUpGui):
             tile.__str__(): tile for tile in self.targetTiles
         }
 
-        window = UIWindow(
+        window: NonClosableUIWindow = NonClosableUIWindow(
             Rect((250, 175), (320, 220)),
             uiManager,
             titleCard,
@@ -46,7 +46,7 @@ class AbilityPopUpGui(PopUpGui):
 
         UILabel(Rect((10, 10), (280, 30)), promptText, self.manager, self.window)
 
-        self.dropdown = UIDropDownMenu(
+        self.dropdown: UIDropDownMenu = UIDropDownMenu(
             [tile.__str__() for tile in self.targetTiles],
             self.targetTiles[0].__str__() if self.targetTiles else "",
             Rect((40, 50), (210, 30)),
@@ -54,11 +54,11 @@ class AbilityPopUpGui(PopUpGui):
             self.window,
         )
 
-        self.btnYes = UIButton(
+        self.btnYes: UIButton = UIButton(
             Rect((30, 110), (100, 40)), yesLabel, self.manager, self.window
         )
 
-        self.btnNo = UIButton(
+        self.btnNo: UIButton = UIButton(
             Rect((160, 110), (100, 40)), noLabel, self.manager, self.window
         )
 
