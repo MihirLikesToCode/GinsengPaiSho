@@ -94,9 +94,14 @@ class MoveController:
                 self._deselect()
                 return ClickResult(turnEnded=True)
 
+        oldPos: Coordinate = movingTile.pos
         movingTile.moveTo(destination)
         self._deselect()
-        return ClickResult(turnEnded=True, pendingAbilityTile=movingTile)
+        return ClickResult(
+            turnEnded=True,
+            pendingAbilityTile=movingTile,
+            highlightCoords=[destination, oldPos],
+        )
 
     def _selectTile(
         self, coord: Coordinate, board: Board, turn: Literal["white", "black"]

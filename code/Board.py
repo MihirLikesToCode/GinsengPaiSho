@@ -417,7 +417,7 @@ class Board:
 
     def _getAllMovesForAColor(
         self, color: Literal["white", "black"]
-    ) -> list[Coordinate]:
+    ) -> dict[BasicTile, list[Coordinate]]:
         """Gets all possible moves for a given color. Only used to check if a player has no
         moves. If a player has no moves, it is a draw.
 
@@ -428,11 +428,11 @@ class Board:
         Returns:
             list[Coordinate]: All the moves they can make. Without specifing the piece.
         """
+        moves: dict[BasicTile, list[Coordinate]] = {}
 
-        moves: list[Coordinate] = []
         for tile in self.tiles:
             if tile.color == color:
-                moves += tile.getValidMoves(self.tiles, self.coordinates)
+                moves[tile] = tile.getValidMoves(self.tiles, self.coordinates)
 
         return moves
 
@@ -442,10 +442,14 @@ class Board:
         Returns:
             bool: True if there is a draw. False otherwise.
         """
-        whiteMoves: list[Coordinate] = self._getAllMovesForAColor("white")
-        blackMoves: list[Coordinate] = self._getAllMovesForAColor("black")
+        whiteMoves: dict[BasicTile, list[Coordinate]] = self._getAllMovesForAColor(
+            "white"
+        )
+        blackMoves: dict[BasicTile, list[Coordinate]] = self._getAllMovesForAColor(
+            "black"
+        )
 
-        if len(whiteMoves) == 0 or len(blackMoves) == 0:
+        if len(whiteMoves.values()) == 0 or len(blackMoves.values()) == 0:
             return True
         return False
 

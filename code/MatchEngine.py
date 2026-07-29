@@ -178,6 +178,9 @@ class MatchEngine:
         Args:
             decision (MoveDecision): The MoveDecision.
         """
+        bot: BotPlayer | None = self.getPlayerForColor(self.turn)
+        assert bot is not None
+
         self.applyClick(decision.fromCoord)
 
         selected: BasicTile | None = self.moveController.selectedTile
