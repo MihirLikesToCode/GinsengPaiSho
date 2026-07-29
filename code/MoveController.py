@@ -30,7 +30,7 @@ class MoveController:
         self,
         clickedCoord: Coordinate | None,
         board: Board,
-        turn: Literal["White", "Black"],
+        turn: Literal["white", "black"],
     ) -> ClickResult:
         """Feeds a single 'click' (from any source) into the selection state machine.
 
@@ -38,7 +38,7 @@ class MoveController:
             clickedCoord (Coordinate | None): The board coordinate that was clicked,
               or None if the click didn't land on a valid board coordinate.
             board (Board): The current board.
-            turn (Literal["White", "Black"]): Whose turn it currently is.
+            turn (Literal["white", "black"]): Whose turn it currently is.
 
         Returns:
             ClickResult: What happened as a result of this click.
@@ -99,17 +99,17 @@ class MoveController:
         return ClickResult(turnEnded=True, pendingAbilityTile=movingTile)
 
     def _selectTile(
-        self, coord: Coordinate, board: Board, turn: Literal["White", "Black"]
+        self, coord: Coordinate, board: Board, turn: Literal["white", "black"]
     ) -> ClickResult:
         """Selects a tile, getting its possible moves and eligibility for trading/
 
         Args:
             coord (Coordinate): The coordinate that was clicked.
             board (Board): The board.
-            turn (Literal["White", "Black"]): _description_
+            turn (Literal["white", "black"]): The current turn.
 
         Returns:
-            ClickResult: _description_
+            ClickResult: ClickResult
         """
         tileAtCoord: BasicTile | None = board.getTileAtCoord(coord)
 
@@ -117,7 +117,7 @@ class MoveController:
             return self._deselect()
 
         self.selectedTile = tileAtCoord
-        isOwnTile: bool = tileAtCoord.color == turn.lower()
+        isOwnTile: bool = tileAtCoord.color == turn
         self.validMoves = board.getValidMovesForTile(tileAtCoord) if isOwnTile else []
 
         tradeEligibleTile: BasicTile | None = None
@@ -127,3 +127,10 @@ class MoveController:
         return ClickResult(
             highlightCoords=self.validMoves, tradeEligibleTile=tradeEligibleTile
         )
+
+
+if __name__ == "__main__":
+    print(
+        "You are running MoveController.py directly. This file is meant to be"
+        " imported as a module, so there is no code to run here."
+    )

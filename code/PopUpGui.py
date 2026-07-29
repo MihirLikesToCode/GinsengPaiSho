@@ -54,3 +54,10 @@ class PopUpGui:
         Args:
             event (Event): The event.
         """
+
+
+if __name__ == "__main__":
+    print(
+        "You are running PopUpGui.py directly. This file is meant to be"
+        " imported as a module, so there is no code to run here."
+    )

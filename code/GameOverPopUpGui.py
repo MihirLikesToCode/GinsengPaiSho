@@ -57,3 +57,19 @@ class GameOverPopUpGui(PopUpGui):
         if event.type == pgg.UI_BUTTON_PRESSED:
             if event.ui_element == self.btnNewGame:
                 self.newGameRequested = True
+
+    def answer(self, requestNewGame: bool = True) -> None:
+        """Answers this pop up automatically without processing an event.
+
+        Args:
+            requestNewGame (bool, optional): Whether to request a new game or not.
+            Defaults to True.
+        """
+        self.newGameRequested = requestNewGame
+
+
+if __name__ == "__main__":
+    print(
+        "You are running GameOverPopUpGui.py directly. This file is meant to be"
+        " imported as a module, so there is no code to run here."
+    )

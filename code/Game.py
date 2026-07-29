@@ -9,48 +9,37 @@ from pygame_gui.ui_manager import UIManager
 
 from AbilityPopUpGui import AbilityPopUpGui
 from BasicTile import BasicTile
-from Board import Board
-from Coordinate import Coordinate
 from GameOverPopUpGui import GameOverPopUpGui
 from InputProvider import InputProvider, MouseInputProvider
-from MoveController import ClickResult, MoveController
+from MatchEngine import MatchEngine
+from Player import BotPlayer
 from PopUpGui import PopUpGui
 from Settings import SCREEN_SIZE
 
 
-class Game:
-    """Owns all game state and orchestrates a single frame's worth of work."""
+class Game(MatchEngine):
+    """Creates a game with a window."""
 
-    def __init__(self, inputProvider: InputProvider | None = None) -> None:
-        """Initializes a game with an inputProvider
+    def __init__(
+        self,
+        whitePlayer: BotPlayer | None = None,
+        blackPlayer: BotPlayer | None = None,
+        inputProvider: InputProvider | None = None,
+    ) -> None:
+        super().__init__(whitePlayer, blackPlayer)
 
-        Args:
-            inputProvider (InputProvider | None, optional): Defaults to None.
-        """
-        self.board: Board = Board()
-        self.turn: Literal["White", "Black"] = "White"
         self.screen: Surface = self._initScreen()
         self.uiManager: UIManager = UIManager((SCREEN_SIZE, SCREEN_SIZE))
-
         self.inputProvider: InputProvider = inputProvider or MouseInputProvider()
-        self.moveController: MoveController = MoveController()
 
         self.abilityPopUp: AbilityPopUpGui | None = None
         self.tradePopUp: AbilityPopUpGui | None = None
         self.gameOverPopUp: GameOverPopUpGui | None = None
-        self.pendingAbilityTile: BasicTile | None = None
-        self.pendingTradeTile: BasicTile | None = None
-        self.highlightedCoords: list[Coordinate] = []
 
         self.running: bool = True
 
     @staticmethod
     def _initScreen() -> Surface:
-        """Initializes the screen.
-
-        Returns:
-            Surface: The screen, in the form of a pygame.surface.Surface
-        """
         screen: Surface = pg.display.set_mode((SCREEN_SIZE, SCREEN_SIZE))
         pg.display.set_caption("Ginseng Pai Sho")
         return screen
@@ -74,16 +63,17 @@ class Game:
             self._resolveGameOverPopUp()
             self._checkForGameEnd()
             self._spawnAbilityPopUpIfNeeded()
+            self._takeBotTurnIfNeeded()
 
             self.drawScreen()
 
         pg.quit()
 
-    def _getActivePopUp(self) -> PopUpGui | None:
-        """Returns the active pop up (There can only ever be one active pop up).
+    def _activePopUp(self) -> PopUpGui | None:
+        """Gets the active pop up.
 
         Returns:
-            PopUpGui | None: The active pop up.
+            PopUpGui | None: The active pop up, or None if there isn't a pop up.
         """
         for popUp in (self.abilityPopUp, self.tradePopUp, self.gameOverPopUp):
             if popUp is not None and popUp.isActive:
@@ -91,13 +81,13 @@ class Game:
         return None
 
     def _clampActivePopUp(self) -> None:
-        """Keeps the active pop up on screen (clamps it to the screen)."""
-        activePopUp: PopUpGui | None = self._getActivePopUp()
+        """Clamps the active pop up to the confines of the screen."""
+        activePopUp: PopUpGui | None = self._activePopUp()
         if activePopUp is not None:
             activePopUp.clampToScreen(SCREEN_SIZE)
 
     def _processEvents(self) -> None:
-        """Processes events in the pygame.event.get() stream."""
+        """Processes pygame.event.Event() events."""
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.running = False
@@ -105,113 +95,76 @@ class Game:
 
             self.uiManager.process_events(event)
 
-            activePopUp: PopUpGui | None = self._getActivePopUp()
+            activePopUp: PopUpGui | None = self._activePopUp()
             if activePopUp is not None:
                 activePopUp.processEvent(event)
             elif event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
                 self._handleMouseClick(event)
 
     def _handleMouseClick(self, event: Event) -> None:
-        """Handles a mouse click.
+        """Handles a mouse click in the form of a pygame.event.Event() event.
 
         Args:
-            event (Event): A pygame.event.Event mouse click.
+            event (Event): The mouse click.
         """
-        clickedCoord: Coordinate | None = self.inputProvider.getClickedCoordinate(
-            event, self.board
-        )
+        if self.getPlayerForColor(self.turn) is not None:
+            return  # a bot controls this turn - ignore stray mouse input
+        clickedCoord = self.inputProvider.getClickedCoordinate(event, self.board)
         self.applyClick(clickedCoord)
 
-    def applyClick(self, clickedCoord: Coordinate | None) -> None:
-        """Applies a click to the game state.
+    def _onTradeEligible(self, tile: BasicTile) -> None:
+        """Spawns the trade pop up.
 
         Args:
-            clickedCoord (Coordinate | None): The clicked coordinate.
+            tile (BasicTile): The tile on the trade temple.
         """
-
-        result: ClickResult = self.moveController.handleClick(
-            clickedCoord, self.board, self.turn
-        )
-        self.highlightedCoords = result.highlightCoords
-
-        if result.tradeEligibleTile is not None:
-            self._spawnTradePopUp(result.tradeEligibleTile)
-
-        if result.turnEnded:
-            self.switchTurn()
-            self.pendingAbilityTile = result.pendingAbilityTile
+        self._spawnTradePopUp(tile)
 
     # ------------------------------------------------------------------ #
     # Popups
     # ------------------------------------------------------------------ #
 
     def _resolveAbilityPopUp(self) -> None:
-        """Handles the ability pop up."""
+        """Applies the result of the ability pop up."""
         if self.abilityPopUp is None or self.abilityPopUp.resultBool is None:
             return
 
-        abilityTile: BasicTile | None = self.pendingAbilityTile
-        targetTile: BasicTile | None = self.abilityPopUp.resultTile
-
-        if abilityTile is not None and targetTile is not None:
-            if abilityTile.pieceType == "Dragon":
-                abilityTile.applyDragonPush(
-                    targetTile, self.board.tiles, self.board.coordinates
-                )
-            elif abilityTile.pieceType == "Badgermole":
-                abilityTile.applyBadgermoleFlip(
-                    targetTile, self.board.tiles, self.board.coordinates
-                )
+        self._applyAbility(self.pendingAbilityTile, self.abilityPopUp.resultTile)
 
         self.abilityPopUp.kill()
         self.abilityPopUp = None
         self.pendingAbilityTile = None
 
     def _spawnAbilityPopUpIfNeeded(self) -> None:
-        """Creates the ability pop up if it is needed and is not currently active."""
-        if self.pendingAbilityTile is None or self._getActivePopUp() is not None:
+        """Spawns the ability pop up when the conditions of an ability are met."""
+        if self.pendingAbilityTile is None or self._activePopUp() is not None:
             return
 
         tile: BasicTile = self.pendingAbilityTile
         targets, title = self._getAbilityTargetsAndTitle(tile)
 
-        if targets:
-            self.abilityPopUp = AbilityPopUpGui(self.uiManager, targets, title)
-        else:
+        if not targets:
             self.pendingAbilityTile = None
+            return
 
-    def _getAbilityTargetsAndTitle(
-        self, tile: BasicTile
-    ) -> tuple[list[BasicTile], str]:
-        """Gets the targets and title of a specific ability for a given tile.
+        self.abilityPopUp = AbilityPopUpGui(self.uiManager, targets, title)
 
-        Args:
-            tile (BasicTile): The tile.
-
-        Returns:
-            tuple[list[BasicTile], str]: The list of targets, and the string of the title.
-        """
-        if tile.pieceType == "Dragon":
-            targets = tile.getDragonPushTargets(
-                self.board.tiles, self.board.coordinates
+        botPlayer: BotPlayer | None = self.getPlayerForColor(tile.color)
+        if botPlayer is not None:
+            chosenTarget: BasicTile | None = botPlayer.chooseAbilityTarget(
+                tile, targets
             )
-            return targets, "Dragon Push Ability"
-
-        if tile.pieceType == "Badgermole":
-            targets = tile.getBadgermoleTargets(
-                self.board.tiles, self.board.coordinates
-            )
-            return targets, "Badgermole Flip Ability"
-
-        return [], ""
+            self.abilityPopUp.answer(chosenTarget is not None, chosenTarget)
 
     def _spawnTradePopUp(self, tile: BasicTile) -> None:
-        """Creates the trade pop up tile if it is needed and is not currently active.
+        """Spawns the trade pop up when the conditions for initiating a trade are met.
 
         Args:
             tile (BasicTile): The tile on the trade temple.
         """
-        if self._getActivePopUp() is not None:
+        if self._activePopUp() is not None:
+            return
+        if self.getPlayerForColor(tile.color) is not None:
             return
 
         self.pendingTradeTile = tile
@@ -227,7 +180,7 @@ class Game:
         )
 
     def _resolveTradePopUp(self) -> None:
-        """Handles the trade pop up."""
+        """Applies the result of the trade pop up."""
         if self.tradePopUp is None or self.tradePopUp.resultBool is None:
             return
 
@@ -253,44 +206,53 @@ class Game:
         self.pendingTradeTile = None
 
     def _resolveGameOverPopUp(self) -> None:
-        """Handles the game over pop up."""
+        """Starts a new game if the player has requested one."""
         if self.gameOverPopUp is not None and self.gameOverPopUp.newGameRequested:
             self._resetGame()
 
     def _resetGame(self) -> None:
         """Resets the game."""
-        assert self.gameOverPopUp is not None
-        self.gameOverPopUp.kill()
-        self.gameOverPopUp = None
-
-        self.board = Board()
-        self.turn = "White"
-        self.moveController = MoveController()
-        self.pendingAbilityTile = None
-        self.pendingTradeTile = None
+        if self.gameOverPopUp is not None:
+            self.gameOverPopUp.kill()
+            self.gameOverPopUp = None
         self.abilityPopUp = None
         self.tradePopUp = None
-        self.highlightedCoords = []
+        self._resetGameState()
 
     def _checkForGameEnd(self) -> None:
-        """Checks if the game is over, and initializes the corresponding pop up if so."""
-        if self._getActivePopUp() is not None:
+        """Spawns the game-over popup on a win or a draw. Skipped while any
+        popup is already open."""
+        if self._activePopUp() is not None:
             return
 
-        winner: Literal["white", "black"] | None = self.board.checkIfAColorHasWon()
-
-        if winner is not None:
-            self.gameOverPopUp = GameOverPopUpGui(self.uiManager, winner)
-        elif self.board.checkForDraw():
-            self.gameOverPopUp = GameOverPopUpGui(self.uiManager, "draw")
+        result: Literal["white", "black", "draw"] | None = self._getGameResult()
+        if result is not None:
+            self.gameOverPopUp = GameOverPopUpGui(self.uiManager, result)
 
     # ------------------------------------------------------------------ #
-    # Misc
+    # Bot turns
     # ------------------------------------------------------------------ #
 
-    def switchTurn(self) -> None:
-        """Switches the turn."""
-        self.turn = "Black" if self.turn == "White" else "White"
+    def _takeBotTurnIfNeeded(self) -> None:
+        """Asks a bot to decide a turn, then plays it. Nothing happens on a humans turn,
+        an active pop up, an ability, or a trade.
+        """
+        if self._activePopUp() is not None:
+            return
+        if self.pendingAbilityTile is not None or self.pendingTradeTile is not None:
+            return
+
+        player: BotPlayer | None = self.getPlayerForColor(self.turn)
+        if player is None:
+            return
+
+        decision = player.decideTurn(self.board)
+        if decision is not None:
+            self._applyBotDecision(decision)
+
+    # ------------------------------------------------------------------ #
+    # Drawing
+    # ------------------------------------------------------------------ #
 
     def drawScreen(self) -> None:
         """Draws the entirety of the screen."""
@@ -302,4 +264,11 @@ class Game:
 
 
 if __name__ == "__main__":
+    # Mode 1: mouse vs mouse (hotseat).
     Game().run()
+
+    # Mode 2: mouse (white) vs a bot (black).
+    # Game(blackPlayer=SomeBot("black")).run()
+
+    # Mode 3: bot vs bot, shown in a window (e.g. to watch them play).
+    # Game(whitePlayer=SomeBot("white"), blackPlayer=SomeBot("black")).run()

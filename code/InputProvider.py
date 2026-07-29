@@ -11,24 +11,22 @@ class InputProvider(ABC):
     """Base class for providing inputs to the game."""
 
     @abstractmethod
-    def getClickedCoordinate(self, event: Event, board: Board) -> Coordinate | None:
-        """Given an event that has already been identified as a 'click', returns the
-        board Coordinate it corresponds to, or None if it doesn't land on a valid
-        board coordinate.
-
-        Args:
-            event (Event): The click-like event.
-            board (Board): The current board (used to validate the coordinate).
-
-        Returns:
-            Coordinate | None: The clicked coordinate, or None.
-        """
+    def getClickedCoordinate(self, event: Event, board: Board) -> Coordinate | None: ...
 
 
 class MouseInputProvider(InputProvider):
     """Converts real mouse clicks (in pixels) into board Coordinates."""
 
     def getClickedCoordinate(self, event: Event, board: Board) -> Coordinate | None:
+        """Gets the board coordinate of a click based on a pygame event click.
+
+        Args:
+            event (Event): The click event.
+            board (Board): The board.
+
+        Returns:
+            Coordinate | None: The board Coordinate. None if the Coordinate is not valid.
+        """
         return self.pixelToCoordinate(event.pos, board)
 
     @staticmethod

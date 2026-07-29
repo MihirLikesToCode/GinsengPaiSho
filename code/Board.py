@@ -68,7 +68,7 @@ class Board:
         self,
         screen: Surface,
         coordsToHighlight: list[Coordinate],
-        turn: Literal["White", "Black"],
+        turn: Literal["white", "black"],
     ) -> None:
         """Draws the following components of the board:
         - The background
@@ -80,7 +80,7 @@ class Board:
             screen (Surface): The screen
             coordsToHighlight (list[Coordinate]): The coords to highlight. If none, pass in
               an empty list.
-            turn (Literal[&quot;White&quot;, &quot;Black&quot;]): The current player's turn.
+            turn (Literal["white", "black"]): The current player's turn.
         """
         self._drawBoardBackground(screen)
         self._drawTiles(screen)
@@ -399,7 +399,7 @@ class Board:
         self.tiles.append(capturedTile)
         return True
 
-    def _drawText(self, screen: Surface, turn: Literal["White", "Black"]) -> None:
+    def _drawText(self, screen: Surface, turn: Literal["white", "black"]) -> None:
         """Draws the text on the screen."""
         padding: int = 10
 
@@ -409,7 +409,7 @@ class Board:
         screen.blit(titleText, (0, 0))
 
         # turn text
-        turnText: Surface = font.render(f"Turn: {turn}", True, (0, 0, 0))
+        turnText: Surface = font.render(f"Turn: {turn.capitalize()}", True, (0, 0, 0))
         screen.blit(turnText, (screen.get_width() - turnText.get_width() - padding, 0))
 
         # captured pieces

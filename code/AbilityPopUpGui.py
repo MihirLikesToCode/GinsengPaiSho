@@ -84,3 +84,24 @@ class AbilityPopUpGui(PopUpGui):
             elif event.ui_element == self.btnNo:
                 self.resultBool = False
                 self.resultTile = None
+
+    def answer(self, useAbility: bool, targetTile: BasicTile | None) -> None:
+        """Answers this pop up automatically without processing an event.
+
+        Args:
+            useAbility (bool): Whether to use the ability or not.
+            targetTile (BasicTile | None): The tile the ability should target, or none.
+        """
+        if useAbility == True and targetTile is not None:
+            self.resultBool = True
+            self.resultTile = targetTile
+        else:
+            self.resultBool = False
+            self.resultTile = None
+
+
+if __name__ == "__main__":
+    print(
+        "You are running AbilityPopUpGui.py directly. This file is meant to be"
+        " imported as a module, so there is no code to run here."
+    )
