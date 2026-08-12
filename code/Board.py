@@ -404,7 +404,7 @@ class Board:
         padding: int = 10
 
         # title card?
-        font: Font = pg.font.SysFont("mvboli", 30)
+        font: Font = pg.font.SysFont("Cartograph CF", 30)
         titleText: Surface = font.render("Ginseng Pai Sho", True, (0, 0, 0))
         screen.blit(titleText, (0, 0))
 
