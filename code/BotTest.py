@@ -8,7 +8,7 @@ from Player import BotPlayer, MoveDecision, TradeDecision, TurnDecision
 class TestBot(BotPlayer):
     """A test bot used to test bot movement, abilities, and trading."""
 
-    def decideTurn(self, board: Board) -> TurnDecision:
+    def decideTurn(self, board: Board) -> TurnDecision | None:
         tradeDecision = self._maybeTrade(board)
         if tradeDecision is not None:
             return tradeDecision
@@ -27,16 +27,19 @@ class TestBot(BotPlayer):
                 return TradeDecision(tile.pos, capturedTile)
         return None
 
-    def _chooseMove(self, board: Board) -> MoveDecision:
-        """Chooses a random move."""
+    def _chooseMove(self, board: Board) -> MoveDecision | None:
+        """Chooses a random move. Returns None if this color has no legal move
+        at all (e.g. every tile is trapped/boxed in) - previously this looped
+        forever re-picking an empty-moves tile, since it assumed some tile
+        always had a move available."""
         allMoves: dict[BasicTile, list[Coordinate]] = board._getAllMovesForAColor(
             self.color
         )
-        randKey: BasicTile = random.choice(list(allMoves.keys()))
+        movableTiles = [tile for tile, moves in allMoves.items() if moves]
+        if not movableTiles:
+            return None
 
-        while len(allMoves[randKey]) == 0:
-            randKey = random.choice(list(allMoves.keys()))
-
+        randKey: BasicTile = random.choice(movableTiles)
         randMove: Coordinate = random.choice(allMoves[randKey])
 
         return MoveDecision(randKey.pos, randMove)

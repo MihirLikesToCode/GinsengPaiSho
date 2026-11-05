@@ -437,7 +437,13 @@ class Board:
         return moves
 
     def checkForDraw(self) -> bool:
-        """Checks for a draw.
+        """Checks for a draw: true if either color has no legal basic move at
+        all (every tile is trapped/boxed in), regardless of whose turn it is.
+
+        Note this only looks at basic moves, not temple trades - a color with
+        zero moves but an available trade isn't caught here, since callers
+        that need that distinction (e.g. RLBot.decideTurn) already check
+        isEligibleForTempleTrade themselves before deciding there's no action.
 
         Returns:
             bool: True if there is a draw. False otherwise.
@@ -449,9 +455,10 @@ class Board:
             "black"
         )
 
-        if len(whiteMoves.values()) == 0 or len(blackMoves.values()) == 0:
-            return True
-        return False
+        whiteHasAMove = any(len(moves) > 0 for moves in whiteMoves.values())
+        blackHasAMove = any(len(moves) > 0 for moves in blackMoves.values())
+
+        return not whiteHasAMove or not blackHasAMove
 
     def checkIfAColorHasWon(self) -> Literal["white", "black"] | None:
         """Checks if a color has won.

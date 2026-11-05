@@ -2,6 +2,7 @@ from typing import Literal
 
 from MatchEngine import MatchEngine
 from Player import BotPlayer
+from BotTest import TestBot
 
 
 class HeadlessGame(MatchEngine):
@@ -77,3 +78,8 @@ class HeadlessGame(MatchEngine):
             if result is not None:
                 return result
         return "turn_limit"
+
+
+if __name__ == "__main__":
+    hGame: HeadlessGame = HeadlessGame(TestBot("white"), TestBot("black"))
+    hGame.playEpisodeCapped()

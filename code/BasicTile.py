@@ -13,6 +13,17 @@ from pygame.transform import smoothscale
 class BasicTile:
     """Represents a basic tile in Ginseng Pai Sho"""
 
+    # The Northern and Southern Temples may only be used by the Lotus Flower
+    # that started there (see the rulebook's "Temples" section) - everything
+    # else must treat these two squares as always-off-limits, including for
+    # captures. This maps each reserved coordinate to the one color allowed to
+    # ever occupy it (see Board._initTiles: black's Lotus starts at (0, 8),
+    # white's at (0, -8)).
+    _RESERVED_TEMPLES: dict[tuple[int, int], Literal["white", "black"]] = {
+        (0, 8): "black",
+        (0, -8): "white",
+    }
+
     def __init__(
         self,
         pos: Coordinate,
@@ -162,7 +173,7 @@ class BasicTile:
                     validMoves.append(Coordinate.fromTuple(neighbor))
                     current = neighbor
 
-            return validMoves
+            return self._filterReservedTemples(validMoves)
 
         elif self.pieceType == "LotusFlower":
             diagonals: list[tuple[int, int]] = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
@@ -190,7 +201,7 @@ class BasicTile:
                         visitedJumps.add(landing)
                         queue.append(landing)
 
-            return validMoves
+            return self._filterReservedTemples(validMoves)
 
         # for all other pieces
         while queue:
@@ -229,7 +240,22 @@ class BasicTile:
                 validMoves.append(Coordinate.fromTuple(neighbor))
                 queue.append(neighbor)
 
-        return validMoves
+        return self._filterReservedTemples(validMoves)
+
+    def _filterReservedTemples(self, moves: list[Coordinate]) -> list[Coordinate]:
+        """Strips out any destination that is a reserved North/South Temple this
+        tile isn't allowed to enter (see _RESERVED_TEMPLES) - i.e. every square
+        except the owning color's own Lotus Flower moving onto its own Temple.
+        """
+        return [
+            move
+            for move in moves
+            if self._RESERVED_TEMPLES.get(move.toTuple()) is None
+            or (
+                self.pieceType == "LotusFlower"
+                and self.color == self._RESERVED_TEMPLES[move.toTuple()]
+            )
+        ]
 
     def isOnColoredRegion(self, color: Literal["white", "red"]) -> bool:
         """Determines if this tile is on a colored region (for abilities purposes).

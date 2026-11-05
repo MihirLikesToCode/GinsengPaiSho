@@ -266,10 +266,10 @@ class Game(MatchEngine):
 
 if __name__ == "__main__":
     # Mode 1: mouse vs mouse (hotseat).
-    # Game().run()
+    Game().run()
 
     # Mode 2: mouse (white) vs a bot (black).
-    Game(blackPlayer=TestBot("black")).run()
+    # Game(blackPlayer=TestBot("black")).run()
 
     # Mode 3: bot vs bot, shown in a window (e.g. to watch them play).
     # Game(whitePlayer=TestBot("white"), blackPlayer=TestBot("black")).run()

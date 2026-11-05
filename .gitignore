@@ -6,3 +6,7 @@ __pycache__/
 dist/
 .env
 todo.md
+.vscode/
+RL_GAME_PLAN.md
+checkpoints/
+checkpoints_v2/
