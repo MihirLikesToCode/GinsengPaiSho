@@ -5,10 +5,17 @@ baseline, and an evaluation harness against TestBot's random play.
 
 v1 milestone: win-rate vs. TestBot climbing above 50%. That's the bar to clear
 before scaling up (step 5) or upgrading the algorithm (step 6) - see the plan.
+
+Most training episodes are pure self-play (RLBot vs. RLBot, both sharing the
+one network being trained), but a fraction mix in TestBot as one side instead -
+see OPPONENT_MIX_PROB and RL_GAME_PLAN.md's "Lessons learned". Pure self-play
+alone was found to let the policy specialize at beating an evolving version of
+itself without that generalizing to beating a genuinely different opponent.
 """
 
 import argparse
 import os
+import random
 from typing import Literal
 
 import torch
@@ -18,6 +25,7 @@ import torch.optim as optim
 from BoardEncoding import lotusProgressPotential
 from BotTest import TestBot
 from HeadlessGame import HeadlessGame
+from Player import BotPlayer
 from PolicyValueNetwork import PolicyValueNetwork
 from RLBot import RLBot, Transition
 
@@ -41,12 +49,26 @@ LEARNING_RATE = 1e-3
 VALUE_LOSS_COEFF = 0.5
 ENTROPY_COEFF = 0.01
 
+# Fraction of training episodes that pit the RLBot against TestBot (random
+# play) instead of against another copy of itself. A starting value, not a
+# carefully-tuned one - high enough to give a real, direct incentive to
+# generalize beyond beating its own reflection, while staying a minority so
+# self-play's main benefit (an opponent that gets more sophisticated over
+# time, which TestBot never does) isn't thrown away.
+OPPONENT_MIX_PROB = 0.3
+
 # Checkpoints and the learning-curve log live outside code/ so they don't get
 # mixed in with source files - see .gitignore (they're binary/generated, not
 # something to commit).
 CHECKPOINT_DIR = os.path.join(os.path.dirname(__file__), "..", "checkpoints")
 CHECKPOINT_PATH = os.path.join(CHECKPOINT_DIR, "latest.pt")
 LOG_PATH = os.path.join(CHECKPOINT_DIR, "training_log.csv")
+
+# latest.pt is overwritten every eval, so a long run can't roll back to an
+# earlier point or compare checkpoints side-by-side once it's moved on. Every
+# MILESTONE_EVERY episodes, also keep a numbered snapshot that's never
+# overwritten.
+MILESTONE_EVERY = 1000
 
 Color = Literal["white", "black"]
 Result = Literal["white", "black", "draw", "turn_limit"]
@@ -61,8 +83,27 @@ TERMINAL_REWARD: dict[Result, dict[Color, float]] = {
 }
 
 
+def makeTrainingMatchup(network: PolicyValueNetwork) -> tuple[BotPlayer, BotPlayer]:
+    """Decides one training episode's matchup: pure self-play most of the time,
+    or the RLBot against TestBot a fraction of the time (OPPONENT_MIX_PROB) -
+    see the module docstring for why.
+
+    Returns:
+        tuple[BotPlayer, BotPlayer]: (whitePlayer, blackPlayer). Either or both
+          may be an RLBot sharing `network`'s weights; any seat not played by
+          an RLBot is a TestBot instead.
+    """
+    if random.random() < OPPONENT_MIX_PROB:
+        rlColor: Color = random.choice(["white", "black"])
+        rlBot = RLBot(rlColor, network)
+        testBot = TestBot("black" if rlColor == "white" else "white")
+        return (rlBot, testBot) if rlColor == "white" else (testBot, rlBot)
+
+    return RLBot("white", network), RLBot("black", network)
+
+
 def playSelfPlayEpisode(
-    whiteBot: RLBot, blackBot: RLBot, maxTurns: int = MAX_TURNS
+    whiteBot: BotPlayer, blackBot: BotPlayer, maxTurns: int = MAX_TURNS
 ) -> tuple[list[Transition], list[Transition], Result]:
     """Plays one self-play game, applying reward shaping and the terminal reward
     to each bot's trajectory along the way. Mirrors HeadlessGame.playEpisodeCapped,
@@ -71,7 +112,9 @@ def playSelfPlayEpisode(
 
     Returns:
         tuple[list[Transition], list[Transition], Result]: (whiteTrajectory,
-          blackTrajectory, result).
+          blackTrajectory, result). Either list is empty if that seat wasn't
+          played by an RLBot this episode (see makeTrainingMatchup) - there's
+          nothing to train on for a side that never used the network.
     """
     hGame = HeadlessGame(whiteBot, blackBot)
     hGame._resetGameState()
@@ -91,17 +134,21 @@ def playSelfPlayEpisode(
         hGame._applyBotDecision(decision)
         hGame._resolveHeadlessAbility()
 
-        potentialAfter = lotusProgressPotential(hGame.board, actingColor)
-        shapingReward = SHAPING_COEFF * (GAMMA * potentialAfter - potentialBefore)
-        actingBot.recordPendingReward(shapingReward)
+        # TestBot (used for a fraction of episodes - see OPPONENT_MIX_PROB)
+        # isn't driven by the network at all, so it has no trajectory to
+        # attach a shaping reward to.
+        if isinstance(actingBot, RLBot):
+            potentialAfter = lotusProgressPotential(hGame.board, actingColor)
+            shapingReward = SHAPING_COEFF * (GAMMA * potentialAfter - potentialBefore)
+            actingBot.recordPendingReward(shapingReward)
 
         outcome = hGame._getGameResult()
         if outcome is not None:
             result = outcome
             break
 
-    whiteTrajectory = whiteBot.popTrajectory()
-    blackTrajectory = blackBot.popTrajectory()
+    whiteTrajectory = whiteBot.popTrajectory() if isinstance(whiteBot, RLBot) else []
+    blackTrajectory = blackBot.popTrajectory() if isinstance(blackBot, RLBot) else []
 
     if whiteTrajectory:
         whiteTrajectory[-1].reward += TERMINAL_REWARD[result]["white"]
@@ -186,26 +233,30 @@ def trainOnEpisode(
 
 
 def saveCheckpoint(
-    network: PolicyValueNetwork, optimizer: optim.Optimizer, episode: int
+    network: PolicyValueNetwork,
+    optimizer: optim.Optimizer,
+    episode: int,
+    path: str | None = None,
 ) -> str:
-    """Saves the network + optimizer state to CHECKPOINT_PATH, overwriting
-    whatever was there before. `optimizer.state_dict()` is saved too (not just
-    the network's weights) so a resumed run picks up Adam's per-weight step-size
-    history instead of restarting it from scratch.
+    """Saves the network + optimizer state to `path` (CHECKPOINT_PATH by
+    default), overwriting whatever was there before. `optimizer.state_dict()`
+    is saved too (not just the network's weights) so a resumed run picks up
+    Adam's per-weight step-size history instead of restarting it from scratch.
 
     Returns:
         str: the path saved to.
     """
-    os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+    path = path or CHECKPOINT_PATH
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     torch.save(
         {
             "episode": episode,
             "networkState": network.state_dict(),
             "optimizerState": optimizer.state_dict(),
         },
-        CHECKPOINT_PATH,
+        path,
     )
-    return CHECKPOINT_PATH
+    return path
 
 
 def loadCheckpoint(
@@ -292,8 +343,7 @@ def main(
     endEpisode = startEpisode + nEpisodes - 1
     crashCount = 0
     for episode in range(startEpisode, endEpisode + 1):
-        whiteBot = RLBot("white", network)
-        blackBot = RLBot("black", network)
+        whiteBot, blackBot = makeTrainingMatchup(network)
 
         try:
             whiteTrajectory, blackTrajectory, result = playSelfPlayEpisode(
@@ -325,6 +375,13 @@ def main(
             _logEvaluation(episode, result, winRate)
             savedPath = saveCheckpoint(network, optimizer, episode)
             print(f"  saved checkpoint -> {savedPath}", flush=True)
+
+            if episode % MILESTONE_EVERY == 0:
+                milestonePath = os.path.join(
+                    CHECKPOINT_DIR, f"episode_{episode}.pt"
+                )
+                saveCheckpoint(network, optimizer, episode, path=milestonePath)
+                print(f"  saved milestone -> {milestonePath}", flush=True)
 
     saveCheckpoint(network, optimizer, endEpisode)
     print(
