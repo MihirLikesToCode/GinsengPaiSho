@@ -106,6 +106,15 @@ MILESTONE_EVERY = 1000
 # checkpoints_v3 lineage (early/mid/late) rather than clustered. A checkpoint
 # from a run too short to have reached one of these yet just skips it (see
 # evaluateAgainstLadder) - the list doesn't need to shrink for early runs.
+#
+# Deliberately NOT relative to CHECKPOINT_DIR: these are frozen reference
+# points from the checkpoints_v3 lineage specifically, independent of
+# wherever the live run (any lineage after v3) is saving its own milestones.
+# A bug caught in checkpoints_v4's first run: this used to be built from
+# CHECKPOINT_DIR, so every run's ladder eval silently checked for its own
+# nonexistent episode_3000/6000/9000/12000.pt instead of these, and found
+# nothing every time - see RL_GAME_PLAN.md's "evaluation ladder" section.
+LADDER_CHECKPOINT_DIR = os.path.join(os.path.dirname(__file__), "..", "checkpoints_v3")
 LADDER_EPISODES = [3000, 6000, 9000, 12000]
 
 Color = Literal["white", "black"]
@@ -470,8 +479,8 @@ def evaluateAgainstLadder(
     network: PolicyValueNetwork, nGames: int = 20
 ) -> dict[int, float]:
     """Plays `network` head-to-head against each fixed ladder checkpoint in
-    LADDER_EPISODES that exists yet for this CHECKPOINT_DIR (skipping any that
-    don't - e.g. early in a fresh run). Unlike evaluate() (vs. TestBot), this
+    LADDER_EPISODES that exists yet in LADDER_CHECKPOINT_DIR (skipping any
+    that don't). Unlike evaluate() (vs. TestBot), this
     doesn't saturate once the policy clearly surpasses a weak opponent - the
     ladder opponents are genuinely-capable past selves, so it keeps
     distinguishing real strength. See RL_GAME_PLAN.md's "oscillation"
@@ -483,7 +492,7 @@ def evaluateAgainstLadder(
     """
     results: dict[int, float] = {}
     for episode in LADDER_EPISODES:
-        path = os.path.join(CHECKPOINT_DIR, f"episode_{episode}.pt")
+        path = os.path.join(LADDER_CHECKPOINT_DIR, f"episode_{episode}.pt")
         if not os.path.exists(path):
             continue
         opponent = _loadFrozenNetwork(path)
