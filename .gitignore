@@ -8,5 +8,4 @@ dist/
 todo.md
 .vscode/
 RL_GAME_PLAN.md
-checkpoints/
-checkpoints_v2/
+checkpoints_v*/
