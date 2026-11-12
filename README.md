@@ -1,6 +1,8 @@
 # Ginseng Pai Sho
 
-The goal of this personal project was to create Giseng Pai Sho, a game from [this](https://skudpaisho.com/) website, which hosts many Pai Sho variations. Pai Sho is a game from Avatar: The Last Airbender.
+The primary goal of this personal project was to create Giseng Pai Sho, a game from [this](https://skudpaisho.com/) website, which hosts many Pai Sho variations. Pai Sho is a game from Avatar: The Last Airbender.
+
+The secondary goal of this personal project was to create a bot that can play Ginseng Pai Sho, similar to how Stockfish can play Chess. I am currently implementing this using reinforcement learning.
 
 ## Prerequisites
 

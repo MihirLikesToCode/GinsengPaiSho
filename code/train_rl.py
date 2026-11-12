@@ -440,9 +440,21 @@ def evaluate(network: PolicyValueNetwork, nGames: int = 20) -> float:
 def headToHead(
     networkA: PolicyValueNetwork, networkB: PolicyValueNetwork, nGames: int = 20
 ) -> float:
-    """Plays nGames of greedy RLBot(networkA) vs. greedy RLBot(networkB),
+    """Plays nGames of sampled RLBot(networkA) vs. sampled RLBot(networkB),
     alternating colors - the same shape as evaluate(), just with a second
     network instead of TestBot as the opponent.
+
+    Deliberately *not* greedy on both sides: two fully deterministic policies
+    play the exact same game every time a given color assignment repeats, so
+    with only 2 distinct color assignments, nGames can't average out
+    anything - and if that one deterministic game happens to loop forever
+    (confirmed happening for a real checkpoints_v4-vs-checkpoints_v3 pair:
+    every single greedy-vs-greedy game hit the turn limit, while sampled play
+    between the same two networks resolved decisively 7/8 times), the result
+    is a meaningless, structurally-forced ~0.5 regardless of actual skill
+    gap. Sampling reintroduces per-game variation so nGames games are
+    actually nGames distinct trials. See RL_GAME_PLAN.md's "evaluation
+    ladder" section.
 
     Returns:
         float: networkA's win rate (a draw/turn_limit counts as half a win).
@@ -453,8 +465,8 @@ def headToHead(
         aColor: Color = "white" if i % 2 == 0 else "black"
         bColor: Color = "black" if aColor == "white" else "white"
 
-        botA = RLBot(aColor, networkA, greedy=True)
-        botB = RLBot(bColor, networkB, greedy=True)
+        botA = RLBot(aColor, networkA, greedy=False)
+        botB = RLBot(bColor, networkB, greedy=False)
         whitePlayer = botA if aColor == "white" else botB
         blackPlayer = botB if aColor == "white" else botA
 
